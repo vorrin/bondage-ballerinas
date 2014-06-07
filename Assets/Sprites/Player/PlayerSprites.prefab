@@ -27,6 +27,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -269,11 +270,11 @@ MonoBehaviour:
   spriteCollection: {fileID: 0}
   premultipliedAlpha: 0
   altMaterials:
-  - {fileID: 2100000, guid: 3e0517b7ead5fc0479c47559eb275ae0, type: 2}
+  - {fileID: 0}
   atlasMaterials:
-  - {fileID: 2100000, guid: 3e0517b7ead5fc0479c47559eb275ae0, type: 2}
+  - {fileID: 0}
   atlasTextures:
-  - {fileID: 2800000, guid: 339e8c52464021a44a28824506d741b1, type: 3}
+  - {fileID: 0}
   atlasTextureFiles: []
   useTk2dCamera: 0
   targetHeight: 640

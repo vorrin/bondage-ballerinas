@@ -11,8 +11,12 @@ GameObject:
   - 212: {fileID: 21200000}
   - 114: {fileID: 11400000}
   - 54: {fileID: 5400000}
+  - 138: {fileID: 13800000}
+<<<<<<< HEAD
+  - 114: {fileID: 11400002}
+=======
   - 135: {fileID: 13500000}
-  - 153: {fileID: 15300000}
+>>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
   m_Layer: 0
   m_Name: Ship3d
   m_TagString: Player
@@ -48,6 +52,7 @@ Transform:
   m_Children:
   - {fileID: 400002}
   m_Father: {fileID: 0}
+  m_RootOrder: 0
 --- !u!4 &400002
 Transform:
   m_ObjectHideFlags: 1
@@ -59,6 +64,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 400000}
+  m_RootOrder: 0
 --- !u!54 &5400000
 Rigidbody:
   m_ObjectHideFlags: 1
@@ -104,22 +110,41 @@ MonoBehaviour:
   thrustButton: 97
   latchButton: 113
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
+<<<<<<< HEAD
+--- !u!114 &11400002
+MonoBehaviour:
+=======
   debugShipColor: 0
   maximumDistanceForLatching: 20
 --- !u!135 &13500000
 SphereCollider:
+>>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 100000}
+<<<<<<< HEAD
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6cb188d70c514907ab1f34beef3c650, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerId: 0
+  controllerId: 0
+  controllerLayout: 0
+  isReady: 0
+  infoText: {fileID: 0}
+  playerColor: {r: 0, g: 0, b: 0, a: 0}
+=======
   m_Material: {fileID: 13400000, guid: 4774b4d82413bd34684364f58e86dcd7, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 1.38
   m_Center: {x: 0, y: 0, z: 0}
---- !u!153 &15300000
-ConfigurableJoint:
+>>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
+--- !u!138 &13800000
+FixedJoint:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
@@ -209,6 +234,7 @@ ConfigurableJoint:
   m_SwapBodies: 0
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
+  m_EnableCollision: 0
 --- !u!212 &21200000
 SpriteRenderer:
   m_ObjectHideFlags: 1
@@ -227,9 +253,8 @@ SpriteRenderer:
   m_UseLightProbes: 0
   m_LightProbeAnchor: {fileID: 0}
   m_ScaleInLightmap: 1
-  m_SortingLayer: 0
-  m_SortingOrder: 0
   m_SortingLayerID: 0
+  m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: aa46caa08a887314d8408ffde9d82e8e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &100100000
