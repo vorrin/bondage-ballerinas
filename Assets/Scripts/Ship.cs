@@ -10,9 +10,16 @@ public class Ship : MonoBehaviour {
     private bool latched = false;
     public bool tryingToLatch = false;
     public GameObject ropePrefab;
-
-    
     public Dictionary<Ship, UltimateRope> connections = new Dictionary<Ship, UltimateRope>();
+
+    public enum ButtonColors
+    {
+        Red,
+        Green,
+        Blue,
+        Yellow
+    }
+
 	// Use this for initialization
 	void Start () {
 	
@@ -37,12 +44,18 @@ public class Ship : MonoBehaviour {
                 }
                 else
                 {
-
+                    
                     GameObject rope = Instantiate(ropePrefab as Object) as GameObject;
                     UltimateRope ropeComponent = rope.GetComponent<UltimateRope>();
+                    
+                    connections.Add(currentShip, ropeComponent);
+                    currentShip.connections.Add(this, ropeComponent);
+
                     ropeComponent.RopeStart = transform.FindChild("Hook").gameObject;
+                    ropeComponent.RopeNodes[0].fLength = Vector3.Distance(gameObject.transform.position, currentShip.transform.position);
                     ropeComponent.RopeNodes[0].goNode = currentShip.transform.FindChild("Hook").gameObject;
                     ropeComponent.Regenerate();
+
                 }
                 
             }
