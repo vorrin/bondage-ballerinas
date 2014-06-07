@@ -83,11 +83,11 @@ Prefab:
     m_Modifications:
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.x
-      value: 17.0234604
+      value: 3.4569912
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.y
-      value: -.420331925
+      value: -15.2920265
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.z
@@ -124,6 +124,10 @@ Prefab:
     - target: {fileID: 11400002, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
+      propertyPath: m_RootOrder
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 11400002, guid: 271c960b5aec82646a53716f349c5801, type: 2}
@@ -199,8 +203,11 @@ Camera:
     m_Bits: 4294967295
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
   m_HDR: 0
   m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: .0219999999
 --- !u!4 &1440148626
 Transform:
   m_ObjectHideFlags: 0
@@ -212,6 +219,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 0
 --- !u!1 &1728201993
 GameObject:
   m_ObjectHideFlags: 0
@@ -280,9 +288,8 @@ SpriteRenderer:
   m_UseLightProbes: 0
   m_LightProbeAnchor: {fileID: 0}
   m_ScaleInLightmap: 1
-  m_SortingLayer: 0
-  m_SortingOrder: 0
   m_SortingLayerID: 0
+  m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: aa46caa08a887314d8408ffde9d82e8e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!4 &1728201999
@@ -292,10 +299,11 @@ Transform:
   m_PrefabInternal: {fileID: 263740472}
   m_GameObject: {fileID: 1728201993}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17.0234604, y: -.420331925, z: 0}
+  m_LocalPosition: {x: 3.4569912, y: -15.2920265, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 2
 --- !u!1 &1754456295
 GameObject:
   m_ObjectHideFlags: 0
@@ -366,9 +374,8 @@ SpriteRenderer:
   m_UseLightProbes: 0
   m_LightProbeAnchor: {fileID: 0}
   m_ScaleInLightmap: 1
-  m_SortingLayer: 0
-  m_SortingOrder: 0
   m_SortingLayerID: 0
+  m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: aa46caa08a887314d8408ffde9d82e8e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!4 &1754456299
@@ -378,10 +385,11 @@ Transform:
   m_PrefabInternal: {fileID: 2004565778}
   m_GameObject: {fileID: 1754456295}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.5190058, y: 3.78359604, z: 0}
+  m_LocalPosition: {x: -11.9936218, y: -10.2179527, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 1
 --- !u!114 &1754456300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -422,9 +430,8 @@ LineRenderer:
   m_UseLightProbes: 0
   m_LightProbeAnchor: {fileID: 0}
   m_ScaleInLightmap: 1
-  m_SortingLayer: 0
-  m_SortingOrder: 0
   m_SortingLayerID: 0
+  m_SortingOrder: 0
   m_Positions:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 1}
@@ -447,11 +454,11 @@ Prefab:
     m_Modifications:
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.x
-      value: -11.5190058
+      value: -11.9936218
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 3.78359604
+      value: -10.2179527
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: m_LocalPosition.z
@@ -516,6 +523,10 @@ Prefab:
     - target: {fileID: 11400002, guid: 271c960b5aec82646a53716f349c5801, type: 2}
       propertyPath: swingAxis.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
+      propertyPath: m_RootOrder
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 271c960b5aec82646a53716f349c5801, type: 2}
