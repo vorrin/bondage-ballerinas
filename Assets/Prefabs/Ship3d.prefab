@@ -12,6 +12,7 @@ GameObject:
   - 114: {fileID: 11400000}
   - 54: {fileID: 5400000}
   - 138: {fileID: 13800000}
+  - 135: {fileID: 13500000}
   m_Layer: 0
   m_Name: Ship3d
   m_TagString: Player
@@ -42,7 +43,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 100000}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 31.3119812, y: 4.67206097, z: 0}
+  m_LocalPosition: {x: 56.8073044, y: -10.539196, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 400002}
@@ -102,8 +103,21 @@ MonoBehaviour:
   engineStrength: 50
   thrustButton: 97
   latchButton: 113
-  tryingToLatch: 0
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
+  debugShipColor: 0
+  maximumDistanceForLatching: 20
+--- !u!135 &13500000
+SphereCollider:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 100000}
+  m_Material: {fileID: 13400000, guid: 4774b4d82413bd34684364f58e86dcd7, type: 2}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1.38
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!138 &13800000
 FixedJoint:
   m_ObjectHideFlags: 1
