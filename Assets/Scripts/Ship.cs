@@ -51,7 +51,7 @@ public class Ship : MonoBehaviour {
                 }
                 else
                 {
-                    float currentDistance = Vector3.Distance(gameObject.transform.position, currentShip.transform.position);
+                    float currentDistance = Vector3.Distance(gameObject.transform.position, currentShip.transform.position)  ;
                     if (currentDistance > maximumDistanceForLatching)
                     {
                         print("too far");
@@ -69,7 +69,7 @@ public class Ship : MonoBehaviour {
                     currentShip.connections.Add(this, new Dictionary<ButtonColors, UltimateRope>() { { currentColor, ropeComponent } });
 
                     ropeComponent.RopeStart = transform.FindChild("Hook").gameObject;
-                    ropeComponent.RopeNodes[0].fLength = currentDistance; 
+                    ropeComponent.RopeNodes[0].fLength = currentDistance * .6f; 
                     ropeComponent.RopeNodes[0].goNode = currentShip.transform.FindChild("Hook").gameObject;
                     ropeComponent.Regenerate();
 
