@@ -124,9 +124,9 @@ MonoBehaviour:
   LinkJointAngularXLimit: 30
   LinkJointAngularYLimit: 30
   LinkJointAngularZLimit: 115.559998
-  LinkJointSpringValue: 9.99999975e-05
+  LinkJointSpringValue: .400000006
   LinkJointDamperValue: 1000
-  LinkJointMaxForceValue: 1000
+  LinkJointMaxForceValue: 100
   LinkJointBreakForce: Infinity
   LinkJointBreakTorque: Infinity
   SendEvents: 0
