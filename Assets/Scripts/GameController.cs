@@ -17,14 +17,6 @@ public class GameController : MonoBehaviour {
 
 	public List<Player> livingPlayers;
 
-	public bool robotsActive = false;
-	public bool aliensActive = false;
-	public bool dinosActive = false;
-
-	public int dinoCount = 0;
-	public int alienCount = 0;
-	public int robotCount = 0;
-
 	public Transform textJoin, textTitle, textGameOver;
 	public Transform textRobots, textAliens, textDinos;
 	public Transform featherSplotion;
@@ -160,20 +152,20 @@ public class GameController : MonoBehaviour {
 	}
 	
 	
-	public void PlayerWins(Player player)
-	{
-		if (this.gameState != GAMEOVER) 
-		{
-			this.gameState = GAMEOVER;
-			this.winner = player;
-		//	player.isInvulnerable = true;
-			
-			StartCoroutine(ShowPlayerWinsText());
-			
-			Go.to(mainCamera.transform.parent, 1, new GoTweenConfig().eulerAngles(new Vector3(-60,0,0), false).setEaseType(GoEaseType.QuartInOut));
-			Go.to(winner.transform, 1f, new GoTweenConfig().scale(2f, true));
-		}
-	}
+//	public void PlayerWins(Player player)
+//	{
+//		if (this.gameState != GAMEOVER) 
+//		{
+//			this.gameState = GAMEOVER;
+//			this.winner = player;
+//		//	player.isInvulnerable = true;
+//			
+//			StartCoroutine(ShowPlayerWinsText());
+//			
+//			Go.to(mainCamera.transform.parent, 1, new GoTweenConfig().eulerAngles(new Vector3(-60,0,0), false).setEaseType(GoEaseType.QuartInOut));
+//			Go.to(winner.transform, 1f, new GoTweenConfig().scale(2f, true));
+//		}
+//	}
 		
 	private void StartGame()
 	{
@@ -182,7 +174,7 @@ public class GameController : MonoBehaviour {
 //		this.GetComponent<AudioSource>().clip = music;
 		this.GetComponent<AudioSource>().Play();
 
-		this.livingPlayers = new List<Player>();
+		//this.livingPlayers = new List<Player>();
 		//AudioSource.PlayClipAtPoint(startMusic, this.transform.position);
 		foreach(PlayerControllerData pcd in this.connectedControllers) {
 			Vector3 ploc = Vector3.left * ((pcd.playerId - 2)*2 - 5);
@@ -190,15 +182,15 @@ public class GameController : MonoBehaviour {
 				ploc, 
 				Quaternion.Euler(0, 0, 0)) as GameObject;
 			
-			newPlayerObject.layer = 15 + livingPlayers.Count;
+			//newPlayerObject.layer = 15 + livingPlayers.Count;
 			//foreach (Transform child in newPlayerObject.GetComponent<Player>().transformColliderChildren)
 			//{
 			//	child.gameObject.layer = 15+ livingPlayers.Count;
 			//}
 						
-			Player newPlayer = newPlayerObject.GetComponent<Player>();
-			newPlayer.playerControllerData = pcd;
-			this.livingPlayers.Add(newPlayer);
+			//Player newPlayer = newPlayerObject.GetComponent<Player>();
+			//newPlayer.playerControllerData = pcd;
+			//this.livingPlayers.Add(newPlayer);
 		//	Respawn(newPlayer);
 		}
 		
@@ -207,13 +199,13 @@ public class GameController : MonoBehaviour {
 		ShowOnScreenText("");
 	}	
 	
-	public void PlayerDied(Player player) {
-		this.livingPlayers.Remove(player);
-		if (this.livingPlayers.Count == 1) {
-			PlayerWins(this.livingPlayers[0]);
-		}
-	}
-	
+//	public void PlayerDied(Player player) {
+//		this.livingPlayers.Remove(player);
+//		if (this.livingPlayers.Count == 1) {
+//			PlayerWins(this.livingPlayers[0]);
+//		}
+//	}
+
 	void LobbyUpdate() {
 	
 		if (gameState == LOBBY)
