@@ -1,0 +1,36 @@
+        if (Input.GetButtonUp("Jump1_g" + playerControllerData.controllerId) )
+	        {
+		            if (tryingToLatch != ButtonUpColors.Null  )
+			                {
+					                return;
+							            }
+								                TryLatching( ButtonUpColors.Green);
+										        }
+
+											        if (Input.GetButtonUp("Fire1_g" + playerControllerData.controllerId) )
+												        {
+													            if (tryingToLatch != ButtonUpColors.Null  )
+														                {
+																                return;
+																		            }
+																			                TryLatching( ButtonUpColors.Red);
+																					        }
+
+																						        if (Input.GetButtonUp("Fire1_z" + playerControllerData.controllerId) )
+																							        {
+																								            if (tryingToLatch != ButtonUpColors.Null  )
+																									                {
+																											                return;
+																													            }
+																														                TryLatching( ButtonUpColors.Yellow );
+																																        }
+																																	        if (Input.GetButtonUp("Fire1_s" + playerControllerData.controllerId) )
+																																		        {
+																																			            if (tryingToLatch != ButtonUpColors.Null  )
+																																				                {
+																																						                return;
+																																								            }
+																																									                TryLatching( ButtonUpColors.Blue );
+																																											        }
+
+

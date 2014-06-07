@@ -13,6 +13,7 @@ public class Ship : MonoBehaviour {
     public ButtonColors debugShipColor;
     public float maximumDistanceForLatching = 20f;
     public float maximumVelocity = 100f;
+    public GameObject indicator;
     public enum ButtonColors
     {
         Red,
@@ -34,7 +35,7 @@ public class Ship : MonoBehaviour {
 	}
 
     public void Thrust(float deltaTime){
-
+        print("thrusting ! " + engineStrength * deltaTime);
         rigidbody.AddForce( transform.up * (engineStrength * deltaTime ) );
         rigidbody.velocity = Vector3.ClampMagnitude(rigidbody.velocity, maximumVelocity);
     }
@@ -100,51 +101,62 @@ public class Ship : MonoBehaviour {
 
         if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) > 0f)
         {
+            print("should be runnig");
             Thrust(Time.deltaTime);
         }
 
-		if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) < 0f)
-		{
-			Thrust(-Time.deltaTime);
-		}
+        if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) < 0f)
+        {
+            Thrust(-Time.deltaTime);
+        }
+
 
         //Jump1_g == green
         //Fire1_g == red
         //Fire1_z == yellow
         //Fire1_s == blue
-        if (Input.GetButton("Jump1_g" + playerControllerData.controllerId) )
+        if (Input.GetButton("Jump1_g" + playerControllerData.controllerId))
         {
-            if (tryingToLatch != ButtonColors.Null  )
+            indicator.SetActive(true);
+            indicator.GetComponent<SpriteRenderer>().color = Color.green;
+            if (tryingToLatch != ButtonColors.Null)
             {
                 return;
             }
-            TryLatching( ButtonColors.Green);
+            TryLatching(ButtonColors.Green);
         }
 
-        if (Input.GetButton("Fire1_g" + playerControllerData.controllerId) )
+        if (Input.GetButton("Fire1_g" + playerControllerData.controllerId))
         {
-            if (tryingToLatch != ButtonColors.Null  )
+            indicator.SetActive(true);
+            indicator.GetComponent<SpriteRenderer>().color = Color.red;
+            if (tryingToLatch != ButtonColors.Null)
             {
                 return;
             }
-            TryLatching( ButtonColors.Red);
+            TryLatching(ButtonColors.Red);
         }
 
-        if (Input.GetButton("Fire1_z" + playerControllerData.controllerId) )
+        if (Input.GetButton("Fire1_z" + playerControllerData.controllerId))
         {
-            if (tryingToLatch != ButtonColors.Null  )
+
+            indicator.SetActive(true);
+            indicator.GetComponent<SpriteRenderer>().color = Color.yellow;
+            if (tryingToLatch != ButtonColors.Null)
             {
                 return;
             }
-            TryLatching( ButtonColors.Yellow );
+            TryLatching(ButtonColors.Yellow);
         }
-        if (Input.GetButton("Fire1_s" + playerControllerData.controllerId) )
+        if (Input.GetButton("Fire1_s" + playerControllerData.controllerId))
         {
-            if (tryingToLatch != ButtonColors.Null  )
+            indicator.SetActive(true);
+            indicator.GetComponent<SpriteRenderer>().color = Color.blue;
+            if (tryingToLatch != ButtonColors.Null)
             {
                 return;
             }
-            TryLatching( ButtonColors.Blue );
+            TryLatching(ButtonColors.Blue);
         }
 
 
@@ -156,23 +168,28 @@ public class Ship : MonoBehaviour {
 
         if (Input.GetButtonUp("Jump1_g" + playerControllerData.controllerId))
         {
+            indicator.SetActive(false);
             Unlatch(ButtonColors.Green);
         }
 
         if (Input.GetButtonUp("Fire1_g" + playerControllerData.controllerId))
         {
+            indicator.SetActive(false);
             Unlatch(ButtonColors.Red);
         }
 
         if (Input.GetButtonUp("Fire1_z" + playerControllerData.controllerId))
         {
+            indicator.SetActive(false);
             Unlatch(ButtonColors.Yellow);
 
         }
         if (Input.GetButtonUp("Fire1_s" + playerControllerData.controllerId))
         {
+            indicator.SetActive(false);
             Unlatch(ButtonColors.Blue);
         }
+	
 	
 	}
 
