@@ -1,0 +1,28 @@
+# =============== #
+# Unity generated #
+# =============== #
+*.swp
+Temp/
+Obj/
+UnityGenerated/
+Library/
+ExportedObj/
+Web/
+*.svd
+*.userprefs
+*.csproj
+*.pidb
+*.suo
+*.sln
+*.user
+*.unityproj
+*.booproj
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
