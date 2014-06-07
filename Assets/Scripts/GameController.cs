@@ -31,6 +31,8 @@ public class GameController : MonoBehaviour {
 	//public AudioClip startMusic;
 
 	private Player winner;
+
+    public GameObject[] spawnPoints;
 	
 	public static Color[] playerColorList = new Color[]{
 		new Color(0.01f, 0.02f, 0.6f, 1f),
@@ -178,12 +180,27 @@ public class GameController : MonoBehaviour {
 
 		//this.livingPlayers = new List<Player>();
 		//AudioSource.PlayClipAtPoint(startMusic, this.transform.position);
+        int index = 0;
+
+
 		foreach(PlayerControllerData pcd in this.connectedControllers) {
-			Vector3 ploc = Vector3.left * ((pcd.playerId - 2)*2 - 5);
+            //Vector3 ploc = Vector3.left * ((pcd.playerId - 2)*2 - 50);
+            Vector3 ploc = spawnPoints[index].transform.position;
+            index++;
 			GameObject newPlayerObject = GameObject.Instantiate(this.playerPrefab, 
 				ploc, 
 				Quaternion.Euler(0, 0, 0)) as GameObject;
-			
+            if (newPlayerObject)
+            {
+                //PlayerControllerData data =  newPlayerObject.GetComponent<PlayerControllerData>();
+                
+                //data.playerId = index;
+                //data.controllerId = index;  
+                //connectedControllers[index - 1] = data;
+                //Destroy( GetComponent<PlayerControllerData>() );
+                //game= connectedControllers[index - 1];
+            }
+
 			//newPlayerObject.layer = 15 + livingPlayers.Count;
 			//foreach (Transform child in newPlayerObject.GetComponent<Player>().transformColliderChildren)
 			//{

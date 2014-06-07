@@ -30,6 +30,7 @@ public class PlayerControllerData : MonoBehaviour
 	
 	public void Init(int id, int layout, int pid)
 	{
+        print("I AM INITTING WIth " + id + " " + pid);
 		playerId = pid;
 		controllerId = id;
 		controllerLayout = layout;

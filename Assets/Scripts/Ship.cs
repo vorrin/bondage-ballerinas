@@ -14,6 +14,7 @@ public class Ship : MonoBehaviour {
     public float maximumDistanceForLatching = 20f;
     public float maximumVelocity = 100f;
     public GameObject indicator;
+    public SpriteRenderer playerCircle;
     public enum ButtonColors
     {
         Red,
@@ -74,7 +75,7 @@ public class Ship : MonoBehaviour {
                     currentShip.connections.Add(this, new Dictionary<ButtonColors, UltimateRope>() { { currentColor, ropeComponent } });
 
                     ropeComponent.RopeStart = transform.FindChild("Hook").gameObject;
-                    ropeComponent.RopeNodes[0].fLength = currentDistance * .4f; 
+                    ropeComponent.RopeNodes[0].fLength = currentDistance * 1f;
                     ropeComponent.RopeNodes[0].goNode = currentShip.transform.FindChild("Hook").gameObject;
                     ropeComponent.Regenerate();
 

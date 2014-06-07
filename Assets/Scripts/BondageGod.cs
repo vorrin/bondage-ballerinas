@@ -18,15 +18,16 @@ public class BondageGod : MonoBehaviour {
         Vector3 spawnPoint = Camera.main.ScreenToWorldPoint(new Vector3(
             Random.RandomRange(50, Screen.width - 50),
             Random.RandomRange(50, Screen.height - 50),
-            10f)
+            9.044445f)
             );
-        Instantiate(bonusItem, spawnPoint, transform.rotation);
+        Instantiate(bonusItem, new Vector3(spawnPoint.x , spawnPoint.y, 9.044445f), transform.rotation);
 
     }
 
     IEnumerator BonusRoutine() {
         SpawnBonus();
         yield return new WaitForSeconds(Random.RandomRange(minBonusSpawnTime, maxBonusSpawnTime));
+        StartCoroutine("BonusRoutine"); 
     }
 	
 	// Update is called once per frame
