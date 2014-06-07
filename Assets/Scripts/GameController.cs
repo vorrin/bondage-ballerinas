@@ -15,6 +15,8 @@ public class GameController : MonoBehaviour {
 	public float countDownToStartMax; // seconds
 	private float countDownToStart; // seconds
 
+
+	public List<GameObject> playerList;
 	public List<Player> livingPlayers;
 
 	public Transform textJoin, textTitle, textGameOver;
@@ -197,6 +199,17 @@ public class GameController : MonoBehaviour {
 		winner = null;
 		gameState = PLAYING;
 		ShowOnScreenText("");
+
+		playerList = new List<GameObject>();
+
+		foreach (var player in GameObject.FindGameObjectsWithTag("Player"))
+		{
+			playerList.Add (player);
+		}
+
+		float p = playerList[0].transform.position.x;
+		Debug.Log(p);
+
 	}	
 	
 //	public void PlayerDied(Player player) {
@@ -352,6 +365,19 @@ public class GameController : MonoBehaviour {
 			}			
 		}	
 		*/	
+
+	}
+
+
+	public void SpawnPrize(){
+
+		float x;
+		float z; 
+
+		foreach (var player in playerList){
+
+		}
+
 
 	}
 

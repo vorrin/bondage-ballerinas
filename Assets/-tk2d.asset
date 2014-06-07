@@ -531,11 +531,11 @@ MonoBehaviour:
     spriteCollectionGUID: 7037e714a39dc8a4a9ea73437b3226c5
     spriteCollectionDataGUID: 03d779b3f14981b4691379e390b19cd4
     spriteNames:
-    - hockey_ice_rink_for_nhl_teams_by_topherlee2-d5bsl13
+    - Rink1
     spriteTextureGUIDs:
-    - 73fc0dd36261e244fbdc4a27fc3a9e9a
+    - 357d6174a12fc9346b8906486cbd69d6
     spriteTextureTimeStamps:
-    - 1402151198.69213
+    - 1402158666.49027
     managedSpriteCollection: 0
     loadable: 0
     assetName: 

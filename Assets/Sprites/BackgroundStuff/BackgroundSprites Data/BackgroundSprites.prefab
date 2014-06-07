@@ -43,7 +43,7 @@ MonoBehaviour:
   materialIdsValid: 1
   needMaterialInstance: 0
   spriteDefinitions:
-  - name: hockey_ice_rink_for_nhl_teams_by_topherlee2-d5bsl13
+  - name: Rink1
     boundsData:
     - {x: 0, y: -.0250005722, z: 0}
     - {x: 63.1000023, y: 31.6499996, z: 0}
@@ -66,7 +66,7 @@ MonoBehaviour:
     indices: 000000000300000001000000020000000300000000000000
     material: {fileID: 2100000, guid: f043af1d41f6b8145b83e04f2936b74c, type: 2}
     materialId: 0
-    sourceTextureGUID: 73fc0dd36261e244fbdc4a27fc3a9e9a
+    sourceTextureGUID: 357d6174a12fc9346b8906486cbd69d6
     extractRegion: 0
     regionX: 0
     regionY: 0
@@ -100,7 +100,7 @@ MonoBehaviour:
   loadable: 0
   invOrthoSize: 2
   halfTargetHeight: 10
-  buildKey: 1185872327
+  buildKey: 399917653
   dataGuid: 03d779b3f14981b4691379e390b19cd4
   managedSpriteCollection: 0
   hasPlatformData: 0

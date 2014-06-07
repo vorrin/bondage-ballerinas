@@ -12,11 +12,7 @@ GameObject:
   - 114: {fileID: 11400000}
   - 54: {fileID: 5400000}
   - 138: {fileID: 13800000}
-<<<<<<< HEAD
   - 114: {fileID: 11400002}
-=======
-  - 135: {fileID: 13500000}
->>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
   m_Layer: 0
   m_Name: Ship3d
   m_TagString: Player
@@ -47,7 +43,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 100000}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 56.8073044, y: -10.539196, z: 0}
+  m_LocalPosition: {x: 31.3119812, y: 4.67206097, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 400002}
@@ -74,7 +70,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 1
   m_Drag: .200000003
-  m_AngularDrag: .600000024
+  m_AngularDrag: .400000006
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
@@ -109,21 +105,14 @@ MonoBehaviour:
   engineStrength: 50
   thrustButton: 97
   latchButton: 113
+  tryingToLatch: 0
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
-<<<<<<< HEAD
 --- !u!114 &11400002
 MonoBehaviour:
-=======
-  debugShipColor: 0
-  maximumDistanceForLatching: 20
---- !u!135 &13500000
-SphereCollider:
->>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 100000}
-<<<<<<< HEAD
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6cb188d70c514907ab1f34beef3c650, type: 3}
@@ -135,14 +124,6 @@ SphereCollider:
   isReady: 0
   infoText: {fileID: 0}
   playerColor: {r: 0, g: 0, b: 0, a: 0}
-=======
-  m_Material: {fileID: 13400000, guid: 4774b4d82413bd34684364f58e86dcd7, type: 2}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 1.38
-  m_Center: {x: 0, y: 0, z: 0}
->>>>>>> 7462c3478315d1ee8213f2e04c908e0352b8b848
 --- !u!138 &13800000
 FixedJoint:
   m_ObjectHideFlags: 1
