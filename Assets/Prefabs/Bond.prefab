@@ -89,9 +89,9 @@ MonoBehaviour:
     bSegmentBroken: 0
   RopeLayer: 0
   RopePhysicsMaterial: {fileID: 0}
-  RopeDiameter: .5
-  RopeSegmentSides: 24
-  RopeMaterial: {fileID: 0}
+  RopeDiameter: .699999988
+  RopeSegmentSides: 44
+  RopeMaterial: {fileID: 2100000, guid: 9f884cd5b7afe874fa04f41242a8c7d9, type: 2}
   RopeTextureTileMeters: 1
   RopeSectionMaterial: {fileID: 0}
   RopeTextureSectionTileMeters: 1
@@ -120,13 +120,13 @@ MonoBehaviour:
   BoneColliderLength: 1
   BoneColliderOffset: 0
   LinkMass: 9.99999975e-06
-  LinkSolverIterationCount: 100
+  LinkSolverIterationCount: 45
   LinkJointAngularXLimit: 30
   LinkJointAngularYLimit: 30
-  LinkJointAngularZLimit: 30
+  LinkJointAngularZLimit: 115.559998
   LinkJointSpringValue: 9.99999975e-05
   LinkJointDamperValue: 1000
-  LinkJointMaxForceValue: 100
+  LinkJointMaxForceValue: 1000
   LinkJointBreakForce: Infinity
   LinkJointBreakTorque: Infinity
   SendEvents: 0
