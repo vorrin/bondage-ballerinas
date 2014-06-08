@@ -44,7 +44,7 @@ MonoBehaviour:
   - goNode: {fileID: 0}
     fLength: 12
     fTotalLength: 12
-    nNumLinks: 20
+    nNumLinks: 10
     nTotalLinks: 20
     eColliderType: 0
     nColliderSkip: 0
@@ -90,7 +90,7 @@ MonoBehaviour:
   RopeLayer: 0
   RopePhysicsMaterial: {fileID: 0}
   RopeDiameter: .899999976
-  RopeSegmentSides: 34
+  RopeSegmentSides: 3
   RopeMaterial: {fileID: 2100000, guid: 9f884cd5b7afe874fa04f41242a8c7d9, type: 2}
   RopeTextureTileMeters: 1
   RopeSectionMaterial: {fileID: 0}
