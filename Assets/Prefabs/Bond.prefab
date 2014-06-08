@@ -89,7 +89,7 @@ MonoBehaviour:
     bSegmentBroken: 0
   RopeLayer: 0
   RopePhysicsMaterial: {fileID: 0}
-  RopeDiameter: .600000024
+  RopeDiameter: .899999976
   RopeSegmentSides: 34
   RopeMaterial: {fileID: 2100000, guid: 9f884cd5b7afe874fa04f41242a8c7d9, type: 2}
   RopeTextureTileMeters: 1

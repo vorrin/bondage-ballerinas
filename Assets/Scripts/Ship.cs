@@ -103,12 +103,12 @@ public class Ship : MonoBehaviour {
         if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) > 0f)
         {
             print("should be runnig");
-            Thrust(Time.deltaTime);
+            Thrust(Time.deltaTime * Input.GetAxis("Aim_z" + playerControllerData.controllerId));
         }
 
         if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) < 0f)
         {
-            Thrust(-Time.deltaTime);
+            Thrust(Time.deltaTime * Input.GetAxis("Aim_z" + playerControllerData.controllerId));
         }
 
 
