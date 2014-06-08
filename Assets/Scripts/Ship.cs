@@ -203,6 +203,7 @@ public class Ship : MonoBehaviour {
     void Unlatch(ButtonColors unlatchingColor)
     {
         tryingToLatch = ButtonColors.Null;
+        List<Ship> shipsToRemove = new List<Ship>();
         foreach (Ship ship in connections.Keys)
         {
             Dictionary<ButtonColors, UltimateRope> connection = connections[ship];
@@ -211,8 +212,9 @@ public class Ship : MonoBehaviour {
                 Destroy(connection[unlatchingColor].gameObject);
                 ship.connections.Remove(this);
             }
-            connections.Remove(ship);
+           // connections.Remove(ship);
         }
+        connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
 
 
     }
