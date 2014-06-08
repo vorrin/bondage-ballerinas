@@ -135,7 +135,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: engineStrength
-      value: 8000
+      value: 12000
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: m_LocalScale.x
@@ -4374,7 +4374,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17d239a09fa532d459d16d9b1780a2c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  engineStrength: 8000
+  engineStrength: 12000
   thrustButton: 97
   latchButton: 113
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
@@ -5212,7 +5212,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17d239a09fa532d459d16d9b1780a2c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  engineStrength: 8000
+  engineStrength: 12000
   thrustButton: 97
   latchButton: 113
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
@@ -5365,7 +5365,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: engineStrength
-      value: 8000
+      value: 12000
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: m_LocalScale.x
