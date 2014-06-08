@@ -15,11 +15,12 @@ public class Bonus : MonoBehaviour {
        {
            if (collision.gameObject.GetComponent<Ship>().playerColor == Ship.PlayerColor.Blue)
            {
-               bondageGod.blueScore.text += 1; 
+               bondageGod.blueScore.text = (int.Parse(bondageGod.blueScore.text) + 1 ).ToString(); 
            }
            else
            {
-               bondageGod.redScore.text += 1; 
+               bondageGod.redScore.text = (int.Parse(bondageGod.redScore.text) + 1).ToString(); 
+
 
            }
 
