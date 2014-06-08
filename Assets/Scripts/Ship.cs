@@ -15,6 +15,13 @@ public class Ship : MonoBehaviour {
     public float maximumVelocity = 100f;
     public GameObject indicator;
     public SpriteRenderer playerCircle;
+    public PlayerColor playerColor;
+
+    public enum PlayerColor
+    {
+        Blue,
+        Red
+    }
     public enum ButtonColors
     {
         Red,
@@ -36,7 +43,6 @@ public class Ship : MonoBehaviour {
 	}
 
     public void Thrust(float deltaTime){
-        print("thrusting ! " + engineStrength * deltaTime);
         rigidbody.AddForce( transform.up * (engineStrength * deltaTime ) );
         rigidbody.velocity = Vector3.ClampMagnitude(rigidbody.velocity, maximumVelocity);
     }

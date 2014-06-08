@@ -6,6 +6,9 @@ public class BondageGod : MonoBehaviour {
     public float maxBonusSpawnTime = 25f;
     public int maxItemOnScreen = 3;
     public GameObject bonusItem;
+    public TextMesh redScore;
+    public TextMesh blueScore;
+
 
 	// Use this for initialization
 	void Start () {
