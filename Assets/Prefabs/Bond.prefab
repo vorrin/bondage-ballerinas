@@ -46,7 +46,7 @@ MonoBehaviour:
     fTotalLength: 12
     nNumLinks: 20
     nTotalLinks: 20
-    eColliderType: 1
+    eColliderType: 0
     nColliderSkip: 0
     bFold: 1
     bIsCoil: 0
@@ -119,14 +119,14 @@ MonoBehaviour:
   BoneColliderSkip: 0
   BoneColliderLength: 1
   BoneColliderOffset: 0
-  LinkMass: .5
-  LinkSolverIterationCount: 36
-  LinkJointAngularXLimit: 30
-  LinkJointAngularYLimit: 30
-  LinkJointAngularZLimit: 35
-  LinkJointSpringValue: 2
-  LinkJointDamperValue: 2
-  LinkJointMaxForceValue: 400
+  LinkMass: .00999999978
+  LinkSolverIterationCount: 255
+  LinkJointAngularXLimit: 180
+  LinkJointAngularYLimit: 0
+  LinkJointAngularZLimit: 7
+  LinkJointSpringValue: 0
+  LinkJointDamperValue: 0
+  LinkJointMaxForceValue: 100
   LinkJointBreakForce: Infinity
   LinkJointBreakTorque: Infinity
   SendEvents: 0
