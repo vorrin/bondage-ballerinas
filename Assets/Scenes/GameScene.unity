@@ -2265,6 +2265,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47a5cc5204f1b0e46be4bec0168e13db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoThrust: 1
   buttonColor: 0
 --- !u!1 &621209668
 GameObject:
@@ -3485,6 +3486,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 936263367}
   - 82: {fileID: 936263368}
+  - 114: {fileID: 936263369}
   m_Layer: 0
   m_Name: M1
   m_TagString: Untagged
@@ -3561,6 +3563,17 @@ AudioSource:
       tangentMode: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
+--- !u!114 &936263369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 936263366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 904b0e0e99f8eea4295cae315cb6a810, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &941221037
 GameObject:
   m_ObjectHideFlags: 0
@@ -4363,6 +4376,7 @@ GameObject:
   - 135: {fileID: 1220660780}
   - 114: {fileID: 1220660779}
   - 153: {fileID: 1220660781}
+  - 114: {fileID: 1220660785}
   m_Layer: 0
   m_Name: Ship3d1
   m_TagString: Player
@@ -4377,7 +4391,7 @@ Transform:
   m_PrefabInternal: {fileID: 1534534448}
   m_GameObject: {fileID: 1220660777}
   m_LocalRotation: {x: 0, y: 0, z: -.707106829, w: .707106829}
-  m_LocalPosition: {x: -56.8088303, y: 4.45847416, z: 8.68999958}
+  m_LocalPosition: {x: -37.5508423, y: -.277125359, z: 8.68999958}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_Children:
   - {fileID: 621209669}
@@ -4425,7 +4439,7 @@ ConfigurableJoint:
   m_Anchor: {x: 0, y: 1.37500036, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
   m_AutoConfigureConnectedAnchor: 1
-  m_ConnectedAnchor: {x: -4.96703478e-09, y: .855497599, z: 0}
+  m_ConnectedAnchor: {x: 4.96707386e-09, y: .855497599, z: 0}
   m_SecondaryAxis: {x: 0, y: 1, z: 0}
   m_XMotion: 0
   m_YMotion: 0
@@ -4568,6 +4582,19 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_Sprite: {fileID: 21300000, guid: d4f524abd6e267240828ccb2a1d3f347, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &1220660785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1220660777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a5cc5204f1b0e46be4bec0168e13db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoThrust: 1
+  buttonColor: 0
 --- !u!1 &1233505568
 GameObject:
   m_ObjectHideFlags: 0
@@ -5518,6 +5545,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47a5cc5204f1b0e46be4bec0168e13db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoThrust: 1
   buttonColor: 0
 --- !u!1 &1528639931
 GameObject:
@@ -5579,11 +5607,11 @@ Prefab:
     m_Modifications:
     - target: {fileID: 400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: m_LocalPosition.x
-      value: -56.8088303
+      value: -37.5508423
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 4.45847416
+      value: -.277125359
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: m_LocalPosition.z
@@ -5822,6 +5850,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47a5cc5204f1b0e46be4bec0168e13db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoThrust: 1
   buttonColor: 0
 --- !u!1 &1600249016
 GameObject:

@@ -18,10 +18,22 @@ public class BondageGod : MonoBehaviour {
     void SpawnBonus()
     {
         print("sPAWNGING");
-        Vector3 spawnPoint = Camera.main.ScreenToWorldPoint(new Vector3(
-            Random.RandomRange(50, Screen.width - 50),
-            Random.RandomRange(50, Screen.height - 50),
-            9.044445f)
+        //Vector3 spawnPoint = Camera.main.ScreenToWorldPoint(new Vector3(
+        //    Random.RandomRange(Camera.main.scre, Screen.width - 50),
+        //    Random.RandomRange(50, Screen.height - 50),
+        //    9.044445f)
+        //    );
+
+        //Vector3 spawnPoint = Camera.main.ScreenToWorldPoint(new Vector3(
+        //    Random.RandomRange(Screen.width * .2f , Screen.width *.8f),
+        //    Random.RandomRange(50, Screen.height - 50),
+        //    9.044445f)
+        //    );
+
+        Vector3 spawnPoint = Camera.main.ViewportToWorldPoint(new Vector3(
+            Random.Range(.2f, .8f),
+            Random.Range(.1f, .9f),
+            9.0444445f)
             );
         Instantiate(bonusItem, new Vector3(spawnPoint.x , spawnPoint.y, 9.044445f), transform.rotation);
 
