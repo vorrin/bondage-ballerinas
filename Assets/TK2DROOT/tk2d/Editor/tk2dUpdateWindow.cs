@@ -10,7 +10,6 @@ public class tk2dUpdateWindow : EditorWindow
 	{
 		public double version;
 		public int id;
-		public int sortId;
 		public string url;
 		public string changelog;
 	}
@@ -18,43 +17,16 @@ public class tk2dUpdateWindow : EditorWindow
 	ReleaseInfo[] releases = null;
 	
 	string updateInfoUrl = "http://www.2dtoolkit.com/updateinfo.xml";
-	string allUpdatesUrl = "http://www.2dtoolkit.com/downloads";
+	string allUpdatesUrl = "http://www.2dtoolkit.com/forum/index.php?board=4.0";
 	bool showBetaReleases = false;
 	bool showOlderVersions = false;
 	
 	bool errorState = false;
 	string errorMessage = "Click refresh to check for updates.";
-	string platformError = "Unable to check for updates when the active build platform is set to WebPlayer.\nSwitch to another build platform to check for updates, or click the button below to manually check for updates on the website.";
 	Vector2 scrollPosition = Vector2.zero;
 	
-	int GetSortId(int id)
-	{
-		int sortId = 0;
-		if (id >= 0) sortId = id + 20001; // final / patches
-		else if (id < -10000) sortId = -id - 10000; // alpha
-		else sortId = -id + 10000; // beta
-		return sortId;
-	}
-
 	void OnGUI()
 	{
-		if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebPlayer || 
-			EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebPlayerStreamed) {
-			GUILayout.Label(platformError);
-
-			GUILayout.Space(25);
-
-			GUILayout.BeginHorizontal();
-			GUILayout.FlexibleSpace();
-			if (GUILayout.Button("Manually check for updates")) {
-				Application.OpenURL(allUpdatesUrl);	
-			}
-			GUILayout.FlexibleSpace();
-			GUILayout.EndHorizontal();
-
-			return;
-		}
-
 		if (validUpdateData)
 		{
 			
@@ -80,7 +52,6 @@ public class tk2dUpdateWindow : EditorWindow
 					{
 						ReleaseInfo releaseInfo = new ReleaseInfo();
 						releaseInfo.id = int.Parse(node.Attributes["id"].Value, System.Globalization.NumberFormatInfo.InvariantInfo);
-						releaseInfo.sortId = GetSortId(releaseInfo.id);
 						releaseInfo.version = double.Parse(node.Attributes["version"].Value, System.Globalization.NumberFormatInfo.InvariantInfo);
 						releaseInfo.url = node.Attributes["url"].Value;
 						releaseInfo.changelog = node.Attributes["changelog"].Value;
@@ -95,7 +66,10 @@ public class tk2dUpdateWindow : EditorWindow
 					{
 						if (a.version == b.version)
 						{
-							return a.sortId.CompareTo(b.sortId);
+							int av = (a.id >= 0)?(a.id + 16384):(-a.id);
+							int bv = (b.id >= 0)?(b.id + 16384):(-b.id);
+							
+							return bv.CompareTo(av);
 						}
 						else
 						{ 
@@ -110,7 +84,7 @@ public class tk2dUpdateWindow : EditorWindow
 					releases = null;
 				}
 			}
-
+			
 			if (errorMessage != "")
 			{
 				GUILayout.Label(errorMessage);
@@ -131,7 +105,7 @@ public class tk2dUpdateWindow : EditorWindow
 				showOlderVersions = EditorGUILayout.Toggle("Older versions", showOlderVersions);
 				EditorGUILayout.Separator();
 				
-				int installedSortId = GetSortId(tk2dEditorUtility.releaseId);
+				int installedReleaseId = (tk2dEditorUtility.releaseId > 0)?(tk2dEditorUtility.releaseId + 16384):(-tk2dEditorUtility.releaseId);
 				if (releases != null && releases.Length > 0)
 				{
 					scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
@@ -139,9 +113,11 @@ public class tk2dUpdateWindow : EditorWindow
 				
 					foreach (ReleaseInfo release in releases)
 					{
+						int releaseId = (release.id > 0)?(release.id + 16384):(-release.id);
+						
 						if (showOlderVersions == false && 
 							(release.version < tk2dEditorUtility.version ||
-							(release.version == tk2dEditorUtility.version && release.sortId < installedSortId)) )
+							(release.version == tk2dEditorUtility.version && releaseId < installedReleaseId)) )
 						{
 							// stop displaying releases
 							break;

@@ -3,14 +3,6 @@ using System.Collections.Generic;
 
 using tk2dRuntime.TileMap;
 
-[System.Flags]
-public enum tk2dTileFlags {
-	None = 0x00000000,
-	FlipX = 0x01000000,
-	FlipY = 0x02000000,
-	Rot90 = 0x04000000,
-}
-
 [ExecuteInEditMode]
 [AddComponentMenu("2D Toolkit/TileMap/TileMap")]
 /// <summary>
@@ -37,31 +29,7 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	/// <summary>
 	/// The sprite collection used by the tilemap
 	/// </summary>
-	[SerializeField]
-	private tk2dSpriteCollectionData spriteCollection = null;
-	public tk2dSpriteCollectionData Editor__SpriteCollection 
-	{ 
-		get 
-		{ 
-			return spriteCollection; 
-		} 
-		set
-		{
-			spriteCollection = value;
-		}
-	}
-	
-	public tk2dSpriteCollectionData SpriteCollectionInst
-	{
-		get 
-		{
-			if (spriteCollection != null)
-				return spriteCollection.inst;
-			else
-				return null;
-		}
-	}
-	
+	public tk2dSpriteCollectionData spriteCollection;
 	[SerializeField]
 	int spriteCollectionKey;
 	
@@ -81,22 +49,14 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	
 	[SerializeField]
 	ColorChannel colorChannel;
-
-	[SerializeField]
-	GameObject prefabsRoot;
-
-	[System.Serializable]
-	public class TilemapPrefabInstance {
-		public int x, y, layer;
-		public GameObject instance;
-	}
-
-	[SerializeField]
-	List<TilemapPrefabInstance> tilePrefabsList = new List<TilemapPrefabInstance>();
 	
+	public int buildKey;
 	[SerializeField]
 	bool _inEditMode = false;
 	public bool AllowEdit { get { return _inEditMode; } }
+	
+	// do we need to retain meshes?
+	public bool serializeRenderData = false;
 	
 	// holds a path to a serialized mesh, uses this to work out dump directory for meshes
 	public string serializedMeshPath;
@@ -104,9 +64,7 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	void Awake()
 	{
 		bool spriteCollectionKeyMatch = true;
-		if ((SpriteCollectionInst && SpriteCollectionInst.buildKey != spriteCollectionKey) ||
-			SpriteCollectionInst.needMaterialInstance
-			) spriteCollectionKeyMatch = false;
+		if (spriteCollection && spriteCollection.buildKey != spriteCollectionKey) spriteCollectionKeyMatch = false;
 
 		if (Application.platform == RuntimePlatform.WindowsEditor ||
 			Application.platform == RuntimePlatform.OSXEditor)
@@ -114,12 +72,7 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 			if ((Application.isPlaying && _inEditMode == true) || !spriteCollectionKeyMatch)
 			{
 				// Switched to edit mode while still in edit mode, rebuild
-				EndEditMode();
-			}
-			else {
-				if (spriteCollection != null && data != null && renderData == null) {
-					Build(BuildFlags.ForceBuild);
-				}
+				Build(BuildFlags.ForceBuild);
 			}
 		}
 		else
@@ -128,43 +81,15 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 			{
 				Debug.LogError("Tilemap " + name + " is still in edit mode. Please fix." +
 					"Building overhead will be significant.");
-				EndEditMode();
+				Build(BuildFlags.ForceBuild);
 			}
 			else if (!spriteCollectionKeyMatch)
 			{
-				Build(BuildFlags.ForceBuild);
-			}
-			else if (spriteCollection != null && data != null && renderData == null) {
-				Build(BuildFlags.ForceBuild);
+				Debug.LogError("Tilemap  " + name + " has invalid sprite collection key." +
+				 	"Sprites may not match correctly.");
 			}
 		}
 	}
-
-	void OnDestroy() {
-		if (layers != null) {
-			foreach (tk2dRuntime.TileMap.Layer layer in layers) {
-				layer.DestroyGameData(this);
-			}
-		}
-		if (renderData != null) {
-			tk2dUtil.DestroyImmediate(renderData);
-		}
-	}
-
-#if UNITY_EDITOR
-	void OnDrawGizmos() {
-		if (data != null) {
-			Vector3 p0 = data.tileOrigin;
-			Vector3 p1 = new Vector3(p0.x + data.tileSize.x * width, p0.y + data.tileSize.y * height, 0.0f);
-
-			Gizmos.color = Color.clear;
-			Gizmos.matrix = transform.localToWorldMatrix;
-			Gizmos.DrawCube((p0 + p1) * 0.5f, (p1 - p0));
-			Gizmos.matrix = Matrix4x4.identity;
-			Gizmos.color = Color.white;
-		}
-	}
-#endif
 	
 	[System.Flags]
 	public enum BuildFlags {
@@ -173,19 +98,7 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		ForceBuild = 2
 	};
 	
-
-	/// <summary>
-	/// Builds the tilemap. Call this after using the SetTile functions to
-	/// rebuild the affected partitions. Build only rebuilds affected partitions
-	/// and is efficent enough to use at runtime if you don't use Unity colliders.
-	/// Avoid building tilemaps every frame if you use Unity colliders as it will 
-	/// likely be too slow for runtime use.
-	/// </summary>
 	public void Build() { Build(BuildFlags.Default); }
-
-	/// <summary>
-	/// Like <see cref="T:Build"/> above, but forces a build of all partitions.
-	/// </summary>
 	public void ForceBuild() { Build(BuildFlags.ForceBuild); }
 	
 	// Clears all spawned instances, but retains the renderData object
@@ -193,8 +106,6 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	{
 		if (layers == null)
 			return;
-
-		BuilderUtil.HideTileMapPrefabs( this );
 
 		for (int layerIdx = 0; layerIdx < layers.Length; ++layerIdx)
 		{
@@ -208,33 +119,24 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 				
 				var transform = chunk.gameObject.transform;
 				List<Transform> children = new List<Transform>();
-				for (int i = 0; i < transform.childCount; ++i)
+				for (int i = 0; i < transform.GetChildCount(); ++i)
 					children.Add(transform.GetChild(i));
 				for (int i = 0; i < children.Count; ++i)
-					tk2dUtil.DestroyImmediate(children[i].gameObject);
+					DestroyImmediate(children[i].gameObject);
 			}
 		}
 	}
-
-	void SetPrefabsRootActive(bool active) {
-		if (prefabsRoot != null)
-#if UNITY_3_5
-			prefabsRoot.SetActiveRecursively(active);
-#else
-			tk2dUtil.SetActive(prefabsRoot, active);
-#endif
-	}
-
+	
 	public void Build(BuildFlags buildFlags)
 	{
 #if UNITY_EDITOR || !UNITY_FLASH
 		// Sanitize tilePrefabs input, to avoid branches later
-		if (data != null && spriteCollection != null)
+		if (data != null)
 		{
 			if (data.tilePrefabs == null)
-				data.tilePrefabs = new GameObject[SpriteCollectionInst.Count];
-			else if (data.tilePrefabs.Length != SpriteCollectionInst.Count)
-				System.Array.Resize(ref data.tilePrefabs, SpriteCollectionInst.Count);
+				data.tilePrefabs = new Object[spriteCollection.Count];
+			else if (data.tilePrefabs.Length != spriteCollection.Count)
+				System.Array.Resize(ref data.tilePrefabs, spriteCollection.Count);
 			
 			// Fix up data if necessary
 			BuilderUtil.InitDataStore(this);
@@ -245,54 +147,28 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		}
 
 		// Sanitize sprite collection material ids
-		if (SpriteCollectionInst)
-			SpriteCollectionInst.InitMaterialIds();
+		if (spriteCollection)
+			spriteCollection.InitMaterialIds();
 			
+		
+		bool editMode = (buildFlags & BuildFlags.EditMode) != 0;
 		bool forceBuild = (buildFlags & BuildFlags.ForceBuild) != 0;
 
 		// When invalid, everything needs to be rebuilt
-		if (SpriteCollectionInst && SpriteCollectionInst.buildKey != spriteCollectionKey)
+		if (spriteCollection && spriteCollection.buildKey != spriteCollectionKey)
 			forceBuild = true;
 
-		// Remember active layers
-		Dictionary<Layer, bool> layersActive = new Dictionary<Layer,bool>();
-		if (layers != null)
-		{
-			for (int layerIdx = 0; layerIdx < layers.Length; ++layerIdx)
-			{
-				Layer layer = layers[layerIdx];
-				if (layer != null && layer.gameObject != null)
-				{
-#if UNITY_3_5
-					layersActive[layer] = layer.gameObject.active;
-#else
-					layersActive[layer] = layer.gameObject.activeSelf;
-#endif
-				}
-			}
-		}
-
-		if (forceBuild) {
+		if (forceBuild)
 			ClearSpawnedInstances();
-		}
 
-		BuilderUtil.CreateRenderData(this, _inEditMode, layersActive);
+		BuilderUtil.CreateRenderData(this, editMode);
 		
-		RenderMeshBuilder.Build(this, _inEditMode, forceBuild);
+		RenderMeshBuilder.Build(this, editMode, forceBuild);
 		
-		if (!_inEditMode)
+		if (!editMode)
 		{
-#if !(UNITY_3_5 || UNITY_4_0 || UNITY_4_0_1 || UNITY_4_1 || UNITY_4_2)
-			tk2dSpriteDefinition def = SpriteCollectionInst.FirstValidDefinition;
-			if (def != null && def.physicsEngine == tk2dSpriteDefinition.PhysicsEngine.Physics2D) {
-				ColliderBuilder2D.Build(this, forceBuild);
-			}
-			else 
-#endif
-			{
-				ColliderBuilder3D.Build(this, forceBuild);
-			}
-			BuilderUtil.SpawnPrefabs(this, forceBuild);
+			ColliderBuilder.Build(this);
+			BuilderUtil.SpawnPrefabs(this);
 		}
 		
 		// Clear dirty flag on everything
@@ -300,10 +176,13 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 			layer.ClearDirtyFlag();
 		if (colorChannel != null)
 			colorChannel.ClearDirtyFlag();
-	
+		
+		// One random number to detect undo
+		buildKey = Random.Range(0, int.MaxValue);
+		
 		// Update sprite collection key
-		if (SpriteCollectionInst)
-			spriteCollectionKey = SpriteCollectionInst.buildKey;
+		if (spriteCollection)
+			spriteCollectionKey = spriteCollection.buildKey;
 #endif
 	}
 	
@@ -392,26 +271,11 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	/// </summary>
 	public Vector3 GetTilePosition(int x, int y)
 	{
-		switch (data.tileType)
-		{
-		case tk2dTileMapData.TileType.Rectangular:
-		default:
-			{
-				Vector3 localPosition = new Vector3(
-				x * data.tileSize.x + data.tileOrigin.x,
-				y * data.tileSize.y + data.tileOrigin.y,
-				0);
-				return transform.localToWorldMatrix.MultiplyPoint(localPosition);
-			}
-		case tk2dTileMapData.TileType.Isometric:
-			{
-				Vector3 localPosition = new Vector3(
-				((float)x + (((y & 1) == 0) ? 0.0f : 0.5f)) * data.tileSize.x + data.tileOrigin.x,
-				y * data.tileSize.y + data.tileOrigin.y,
-				0);
-				return transform.localToWorldMatrix.MultiplyPoint(localPosition);
-			}
-		}
+		Vector3 localPosition = new Vector3(
+			x * data.tileSize.x + data.tileOrigin.x,
+			y * data.tileSize.y + data.tileOrigin.y,
+			0);
+		return transform.localToWorldMatrix.MultiplyPoint(localPosition);
 	}
 	
 	/// <summary>
@@ -487,42 +351,41 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	// ISpriteCollectionBuilder
 	public bool UsesSpriteCollection(tk2dSpriteCollectionData spriteCollection)
 	{
-		return (this.spriteCollection != null) && (spriteCollection == this.spriteCollection || spriteCollection == this.spriteCollection.inst);
-	}
-
-	// We might need to end edit mode when running in game
-	public void EndEditMode()
-	{
-		_inEditMode = false;
-		SetPrefabsRootActive(true);
-		Build(BuildFlags.ForceBuild);
-
-		if (prefabsRoot != null) {
-			tk2dUtil.DestroyImmediate(prefabsRoot);
-			prefabsRoot = null;
-		}
+		return spriteCollection == this.spriteCollection;
 	}
 	
 #if UNITY_EDITOR
 	public void BeginEditMode()
 	{
-		if (layers == null) {
-			_inEditMode = true;
-			return;
-		}
-
-		if (!_inEditMode) {
-			_inEditMode = true;
-
-			// Destroy all children
-			// Only necessary when switching INTO edit mode
-			BuilderUtil.HideTileMapPrefabs(this);
-			SetPrefabsRootActive(false);
-		}
+		_inEditMode = true;
 		
-		Build(BuildFlags.ForceBuild);
+		// Destroy all children
+		if (layers == null)
+			return;
+
+		ClearSpawnedInstances();
+		
+		Build(BuildFlags.EditMode | BuildFlags.ForceBuild);
 	}
 
+	public void EndEditMode()
+	{
+		_inEditMode = false;
+		Build(BuildFlags.ForceBuild);
+		
+		if (serializeRenderData && renderData != null)
+		{
+#if (UNITY_3_0 || UNITY_3_1 || UNITY_3_2 || UNITY_3_3 || UNITY_3_4)
+			Debug.LogError("Prefab needs to be updated");
+#else
+			GameObject go = UnityEditor.PrefabUtility.FindValidUploadPrefabInstanceRoot(renderData);
+			Object obj = UnityEditor.PrefabUtility.GetPrefabParent(go);
+			if (obj != null)
+				UnityEditor.PrefabUtility.ReplacePrefab(go, obj, UnityEditor.ReplacePrefabOptions.ConnectToPrefab);
+#endif
+		}
+	}
+	
 	public bool AreSpritesInitialized()
 	{
 		return layers != null;
@@ -546,10 +409,6 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	
 	public void DeleteSprites(int layerId, int x0, int y0, int x1, int y1)
 	{
-		x0 = Mathf.Clamp(x0, 0, width - 1);
-		y0 = Mathf.Clamp(y0, 0, height - 1);
-		x1 = Mathf.Clamp(x1, 0, width - 1);
-		y1 = Mathf.Clamp(y1, 0, height - 1);
 		int numTilesX = x1 - x0 + 1;
 		int numTilesY = y1 - y0 + 1;
 		var layer = layers[layerId];
@@ -564,6 +423,55 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		layer.OptimizeIncremental();
 	}
 #endif
+	
+	// used by util functions
+	public Mesh GetOrCreateMesh()
+	{
+#if UNITY_EDITOR
+		Mesh mesh = new Mesh();
+		if (serializeRenderData && renderData)
+		{
+			if (serializedMeshPath == null) serializedMeshPath = "";
+			
+			if (serializedMeshPath.Length == 0)
+			{
+				// find one serialized mesh
+				MeshFilter[] meshFilters = renderData.gameObject.GetComponentsInChildren<MeshFilter>();
+				foreach (var v in meshFilters)
+				{
+					Mesh m = v.sharedMesh;
+					serializedMeshPath = UnityEditor.AssetDatabase.GetAssetPath(m);
+					if (serializedMeshPath.Length > 0) break;
+				}
+			}
+			if (serializedMeshPath.Length == 0)
+			{
+				MeshCollider[] meshColliders = renderData.gameObject.GetComponentsInChildren<MeshCollider>();
+				foreach (var v in meshColliders)
+				{
+					Mesh m = v.sharedMesh;
+					serializedMeshPath = UnityEditor.AssetDatabase.GetAssetPath(m);
+					if (serializedMeshPath.Length > 0) break;
+				}				
+			}
+			
+			if (serializedMeshPath.Length == 0)
+			{
+				Debug.LogError("Unable to serialize meshes - please resave.");
+				serializeRenderData = false; 
+			}
+			else
+			{
+				// save the mesh
+				string path = UnityEditor.AssetDatabase.GenerateUniqueAssetPath(serializedMeshPath);
+				UnityEditor.AssetDatabase.CreateAsset(mesh, path);
+			}
+		}
+		return mesh;
+#else
+		return new Mesh();
+#endif
+	}
 	
 	public void TouchMesh(Mesh mesh)
 	{
@@ -582,105 +490,22 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		}
 		else
 		{
-			tk2dUtil.DestroyImmediate(mesh);
+			DestroyImmediate(mesh);
 		}
 #else
-		tk2dUtil.DestroyImmediate(mesh);
+		DestroyImmediate(mesh);
 #endif
 	}
-
-	public int GetTilePrefabsListCount() {
-		return tilePrefabsList.Count;
-	}
-
-	public List<TilemapPrefabInstance> TilePrefabsList {
-		get {
-			return tilePrefabsList;
-		}
-	}
-
-	public void GetTilePrefabsListItem(int index, out int x, out int y, out int layer, out GameObject instance) {
-		TilemapPrefabInstance item = tilePrefabsList[index];
-		x = item.x;
-		y = item.y;
-		layer = item.layer;
-		instance = item.instance;
-	}
-
-	public void SetTilePrefabsList(List<int> xs, List<int> ys, List<int> layers, List<GameObject> instances) {
-		int n = instances.Count;
-		tilePrefabsList = new List<TilemapPrefabInstance>(n);
-		for (int i = 0; i < n; ++i) {
-			TilemapPrefabInstance item = new TilemapPrefabInstance();
-			item.x = xs[i];
-			item.y = ys[i];
-			item.layer = layers[i];
-			item.instance = instances[i];
-			tilePrefabsList.Add(item);
-		}
-	}
-
-	/// <summary>
-	/// Gets or sets the layers.
-	/// </summary>
+	
 	public Layer[] Layers
 	{
 		get { return layers; }
 		set { layers = value; }
 	}
-
-	/// <summary>
-	/// Gets or sets the color channel.
-	/// </summary>
+	
 	public ColorChannel ColorChannel
 	{
 		get { return colorChannel; }
 		set { colorChannel = value; }
-	}
-
-	/// <summary>
-	/// Gets or sets the prefabs root.
-	/// </summary>
-	public GameObject PrefabsRoot
-	{
-		get { return prefabsRoot; }
-		set { prefabsRoot = value; }
-	}
-
-	/// <summary>Gets the tile on a layer at x, y</summary> 
-	/// <returns>The tile - either a sprite Id or -1 if the tile is empty.</returns>
-	public int GetTile(int x, int y, int layer) {
-		if (layer < 0 || layer >= layers.Length)
-			return -1;
-		return layers[layer].GetTile(x, y);
-	}
-
-	/// <summary>Gets the tile flags on a layer at x, y</summary> 
-	/// <returns>The tile flags - a combination of tk2dTileFlags</returns>
-	public tk2dTileFlags GetTileFlags(int x, int y, int layer) {
-		if (layer < 0 || layer >= layers.Length)
-			return tk2dTileFlags.None;
-		return layers[layer].GetTileFlags(x, y);
-	}
-
-	/// <summary>Sets the tile on a layer at x, y - either a sprite Id or -1 if the tile is empty.</summary> 
-	public void SetTile(int x, int y, int layer, int tile) {
-		if (layer < 0 || layer >= layers.Length)
-			return;
-		layers[layer].SetTile(x, y, tile);
-	}
-
-	/// <summary>Sets the tile flags on a layer at x, y - a combination of tk2dTileFlags</summary> 
-	public void SetTileFlags(int x, int y, int layer, tk2dTileFlags flags) {
-		if (layer < 0 || layer >= layers.Length)
-			return;
-		layers[layer].SetTileFlags(x, y, flags);
-	}
-
-	/// <summary>Clears the tile on a layer at x, y</summary> 
-	public void ClearTile(int x, int y, int layer) {
-		if (layer < 0 || layer >= layers.Length)
-			return;
-		layers[layer].ClearTile(x, y);
 	}
 }

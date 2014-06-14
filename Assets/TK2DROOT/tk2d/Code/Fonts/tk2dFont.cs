@@ -4,7 +4,7 @@ using System.Collections;
 [AddComponentMenu("2D Toolkit/Backend/tk2dFont")]
 public class tk2dFont : MonoBehaviour 
 {
-	public TextAsset bmFont;
+	public Object bmFont;
 	public Material material;
 	public Texture texture;
 	public Texture2D gradientTexture;
@@ -14,39 +14,18 @@ public class tk2dFont : MonoBehaviour
 	[HideInInspector]
 	public bool proxyFont = false;
 
-	[HideInInspector][SerializeField]
-	private bool useTk2dCamera = false;
-	[HideInInspector][SerializeField]
-	private int targetHeight = 640;
-	[HideInInspector][SerializeField]
-	private float targetOrthoSize = 1.0f;
-
-	public tk2dSpriteCollectionSize sizeDef = tk2dSpriteCollectionSize.Default();
+	[HideInInspector]
+	public bool useTk2dCamera = false;
+	[HideInInspector]
+	public int targetHeight = 640;
+	[HideInInspector]
+	public float targetOrthoSize = 1.0f;
 	
 	public int gradientCount = 1;
 	
 	public bool manageMaterial = false;
 	
-	[HideInInspector]
-	public bool loadable = false;
-	
 	public int charPadX = 0;
 	
 	public tk2dFontData data;
-
-	public static int CURRENT_VERSION = 1;
-	public int version = 0;
-
-	public void Upgrade() {
-		if (version >= CURRENT_VERSION) {
-			return;
-		}
-		Debug.Log("Font '" + this.name + "' - Upgraded from version " + version.ToString());
-
-		if (version == 0) {
-			sizeDef.CopyFromLegacy( useTk2dCamera, targetOrthoSize, targetHeight );
-		}
-
-		version = CURRENT_VERSION;
-	}
 }

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
 
 using tk2dRuntime.TileMap;
@@ -8,38 +7,24 @@ namespace tk2dEditor.TileMap
 {
 	public static class TileMapUtility
 	{
-		public static int MaxWidth = 1024;
-		public static int MaxHeight = 1024;
+		public static int MaxWidth = 512;
+		public static int MaxHeight = 512;
 		public static int MaxLayers = 32;
 		
 		public static void ResizeTileMap(tk2dTileMap tileMap, int width, int height, int partitionSizeX, int partitionSizeY)
 		{
 			int w = Mathf.Clamp(width, 1, MaxWidth);
 			int h = Mathf.Clamp(height, 1, MaxHeight);
-
-			// Since this only works in edit mode, prefabs can be assumed to be saved here
-#if (UNITY_3_5 || UNITY_4_0 || UNITY_4_0_1 || UNITY_4_1 || UNITY_4_2)
-			Undo.RegisterSceneUndo("Resize tile map");
-#else
-			Undo.RegisterCompleteObjectUndo(tileMap, "Resize tile map");
-#endif
-
-			// Delete old layer render data
-			foreach (Layer layer in tileMap.Layers) {
-				layer.DestroyGameData(tileMap);
-				if (layer.gameObject != null) {
-					tk2dUtil.DestroyImmediate(layer.gameObject);
-					layer.gameObject = null;
-				}
-			}
+			
+			tk2dRuntime.TileMap.BuilderUtil.InitDataStore(tileMap);
 
 			// copy into new tilemap
 			Layer[] layers = new Layer[tileMap.Layers.Length];
 			for (int layerId = 0; layerId < tileMap.Layers.Length; ++layerId)
 			{
-				Layer srcLayer = tileMap.Layers[layerId];
-				layers[layerId] = new Layer(srcLayer.hash, w, h, partitionSizeX, partitionSizeY);
-				Layer destLayer = layers[layerId];
+				var srcLayer = tileMap.Layers[layerId];
+				layers[layerId] = new Layer(srcLayer.hash, width, height, partitionSizeX, partitionSizeY);
+				var destLayer = layers[layerId];
 				
 				if (srcLayer.IsEmpty)
 					continue;
@@ -51,7 +36,7 @@ namespace tk2dEditor.TileMap
 				{
 					for (int x = 0; x < wcopy; ++x)
 					{
-						destLayer.SetRawTile(x, y, srcLayer.GetRawTile(x, y));
+						destLayer.SetTile(x, y, srcLayer.GetTile(x, y));
 					}
 				}
 				
@@ -60,7 +45,7 @@ namespace tk2dEditor.TileMap
 			
 			// copy new colors
 			bool copyColors = (tileMap.ColorChannel != null && !tileMap.ColorChannel.IsEmpty);
-			ColorChannel targetColors = new ColorChannel(w, h, partitionSizeX, partitionSizeY);
+			ColorChannel targetColors = new ColorChannel(width, height, partitionSizeX, partitionSizeY);
 			if (copyColors)
 			{
 				int hcopy = Mathf.Min(tileMap.height, h) + 1;
@@ -83,7 +68,7 @@ namespace tk2dEditor.TileMap
 			tileMap.partitionSizeX = partitionSizeX;
 			tileMap.partitionSizeY = partitionSizeY;
 			
-			tileMap.ForceBuild();
+			tk2dRuntime.TileMap.BuilderUtil.CleanRenderData(tileMap);
 		}
 		
 		// Returns index of newly added layer
@@ -101,11 +86,6 @@ namespace tk2dEditor.TileMap
 					if (layer.hash == hash) 
 						duplicateHash = true;
 			} while (duplicateHash == true);
-
-			List<Object> objectsToUndo = new List<Object>();
-			objectsToUndo.Add(tileMap);
-			objectsToUndo.Add(tileMap.data);
-			tk2dUndo.RecordObjects(objectsToUndo.ToArray(), "Add layer");
 			
 			var newLayer = new tk2dRuntime.TileMap.LayerInfo();
 			newLayer.name = "New Layer";
@@ -115,15 +95,6 @@ namespace tk2dEditor.TileMap
 			
 			// remap tilemap
 			tk2dRuntime.TileMap.BuilderUtil.InitDataStore(tileMap);
-
-			GameObject layerGameObject = tk2dUtil.CreateGameObject(newLayer.name);
-			layerGameObject.transform.parent = tileMap.renderData.transform;
-			layerGameObject.transform.localPosition = Vector3.zero;
-			layerGameObject.transform.localScale = Vector3.one;
-			layerGameObject.transform.localRotation = Quaternion.identity;
-			tileMap.Layers[tileMap.Layers.Length - 1].gameObject = layerGameObject;
-
-			Undo.RegisterCreatedObjectUndo(layerGameObject, "Add layer");
 			
 			return tileMap.data.NumLayers - 1;
 		}
@@ -147,81 +118,19 @@ namespace tk2dEditor.TileMap
 			// Just in case
 			if (tileMap.data.NumLayers <= 1)
 				return;
-	
-			// Find all objects that will be affected by this operation			
-			List<Object> objectsToUndo = new List<Object>();
-			objectsToUndo.Add(tileMap);
-			objectsToUndo.Add(tileMap.data);
-			objectsToUndo.AddRange(CollectDeepHierarchy(tileMap.Layers[layerToDelete].gameObject));
-			tk2dUndo.RecordObjects(objectsToUndo.ToArray(), "Delete layer");
-
+			
+			tk2dRuntime.TileMap.BuilderUtil.CleanRenderData(tileMap);
 			tileMap.data.tileMapLayers.RemoveAt(layerToDelete);
-			if (tileMap.Layers[layerToDelete].gameObject != null) {
-				tk2dUtil.DestroyImmediate( tileMap.Layers[layerToDelete].gameObject );
-			}
 			tk2dRuntime.TileMap.BuilderUtil.InitDataStore(tileMap);
-			tileMap.ForceBuild();
-		}
-
-		static Object[] CollectDeepHierarchy( GameObject go ) {
-			if (go == null) {
-				return new Object[0];
-			}
-			else {
-				return EditorUtility.CollectDeepHierarchy( new Object[] { go } );
-			}
 		}
 		
 		public static void MoveLayer(tk2dTileMap tileMap, int layer, int direction)
 		{
-			List<Object> objectsToUndo = new List<Object>();
-			objectsToUndo.Add(tileMap);
-			objectsToUndo.Add(tileMap.data);
-			objectsToUndo.AddRange(CollectDeepHierarchy(tileMap.Layers[layer].gameObject));
-			objectsToUndo.AddRange(CollectDeepHierarchy(tileMap.Layers[layer + direction].gameObject));
-			tk2dUndo.RecordObjects(objectsToUndo.ToArray(), "Move layer");
-
-			// Move all prefabs to new layer
-			int targetLayer = layer + direction;
-			foreach (tk2dTileMap.TilemapPrefabInstance v in tileMap.TilePrefabsList) {
-				if (v.layer == layer) {
-					v.layer = targetLayer;
-				}
-				else if (v.layer == targetLayer) {
-					v.layer = layer;
-				}
-			}
-
-			LayerInfo tmp = tileMap.data.tileMapLayers[layer];
-			tileMap.data.tileMapLayers[layer] = tileMap.data.tileMapLayers[targetLayer];
-			tileMap.data.tileMapLayers[targetLayer] = tmp;
+			tk2dRuntime.TileMap.BuilderUtil.CleanRenderData(tileMap);
+			var tmp = tileMap.data.tileMapLayers[layer];
+			tileMap.data.tileMapLayers[layer] = tileMap.data.tileMapLayers[layer + direction];
+			tileMap.data.tileMapLayers[layer + direction] = tmp;
 			tk2dRuntime.TileMap.BuilderUtil.InitDataStore(tileMap);
-			tileMap.ForceBuild();
-		}
-
-		/// Deletes all generated instances
-		public static void MakeUnique(tk2dTileMap tileMap)
-		{
-			if (tileMap.renderData == null)
-				return;
-			
-			List<Object> objectsToUndo = new List<Object>();
-			objectsToUndo.Add(tileMap);
-			objectsToUndo.Add(tileMap.data);
-			objectsToUndo.AddRange(CollectDeepHierarchy(tileMap.renderData));
-			objectsToUndo.AddRange(CollectDeepHierarchy(tileMap.PrefabsRoot));
-			tk2dUndo.RecordObjects( objectsToUndo.ToArray(), "Make Unique");
-
-			if (tileMap.renderData != null) {
-				tk2dUtil.DestroyImmediate(tileMap.renderData);
-				tileMap.renderData = null;
-			}
-			if (tileMap.PrefabsRoot != null) {
-				tk2dUtil.DestroyImmediate(tileMap.PrefabsRoot);
-				tileMap.PrefabsRoot = null;
-			}
-
-			tileMap.ForceBuild();
 		}
 	}
 }

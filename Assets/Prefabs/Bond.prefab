@@ -9,7 +9,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 400040}
   - 114: {fileID: 11400040}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Bond
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27,6 +27,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 0
 --- !u!114 &11400040
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -89,7 +90,7 @@ MonoBehaviour:
     bSegmentBroken: 0
   RopeLayer: 0
   RopePhysicsMaterial: {fileID: 0}
-  RopeDiameter: .899999976
+  RopeDiameter: 1.70000005
   RopeSegmentSides: 3
   RopeMaterial: {fileID: 2100000, guid: 9f884cd5b7afe874fa04f41242a8c7d9, type: 2}
   RopeTextureTileMeters: 1

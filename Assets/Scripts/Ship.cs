@@ -32,12 +32,12 @@ public class Ship : MonoBehaviour {
     }
 
 
-    private ButtonColors tryingToLatch = ButtonColors.Null;
+    public ButtonColors tryingToLatch = ButtonColors.Null;
     private bool latched = false;
     private PlayerControllerData playerControllerData;
 
 	// Use this for initialization
-	void Start () {
+	public virtual void Start () {
         playerControllerData = GetComponent<PlayerControllerData>();
         //DEBUG
 	}
@@ -54,11 +54,15 @@ public class Ship : MonoBehaviour {
         foreach (GameObject player in players)
         {
             Ship currentShip = player.GetComponent<Ship>();
+
             if (currentShip.tryingToLatch != ButtonColors.Null && currentShip.tryingToLatch == currentColor && currentShip != this)
             {
+                
                 if (connections.ContainsKey(currentShip))
                 {
                     //Already bound, nothing done.
+                    print("returning ");
+
                     return;
                 }
                 else
@@ -70,7 +74,7 @@ public class Ship : MonoBehaviour {
                         continue;
                         //too far, nothing done.
                     }
-                    GameObject rope = Instantiate(ropePrefab as Object) as GameObject;
+                    GameObject rope =  Instantiate(ropePrefab as Object) as GameObject;
                     UltimateRope ropeComponent = rope.GetComponent<UltimateRope>();
 
                     //Dictionary<ButtonColors, UltimateRope> tmpDict = new Dictionary<ButtonColors, UltimateRope>() {
@@ -93,7 +97,7 @@ public class Ship : MonoBehaviour {
     }
 	
 	// Update is called once per frame
-	void Update () {
+	public virtual void Update () {
 
         //if (Input.GetAxis("Aim_z" + playerControllerData.controllerId))
         //{
@@ -126,44 +130,36 @@ public class Ship : MonoBehaviour {
         {
             indicator.SetActive(true);
             indicator.GetComponent<SpriteRenderer>().color = Color.green;
-            if (tryingToLatch != ButtonColors.Null)
-            {
-                return;
-            }
+ 
             TryLatching(ButtonColors.Green);
         }
-
-        if (Input.GetButton("Fire1_g" + playerControllerData.controllerId))
+        else if (Input.GetButton("Fire1_g" + playerControllerData.controllerId))
         {
             indicator.SetActive(true);
             indicator.GetComponent<SpriteRenderer>().color = Color.red;
-            if (tryingToLatch != ButtonColors.Null)
-            {
-                return;
-            }
+
             TryLatching(ButtonColors.Red);
         }
 
-        if (Input.GetButton("Fire1_z" + playerControllerData.controllerId))
+        else if (Input.GetButton("Fire1_z" + playerControllerData.controllerId))
         {
 
             indicator.SetActive(true);
             indicator.GetComponent<SpriteRenderer>().color = Color.yellow;
-            if (tryingToLatch != ButtonColors.Null)
-            {
-                return;
-            }
+
             TryLatching(ButtonColors.Yellow);
         }
-        if (Input.GetButton("Fire1_s" + playerControllerData.controllerId))
+        else if (Input.GetButton("Fire1_s" + playerControllerData.controllerId))
         {
             indicator.SetActive(true);
             indicator.GetComponent<SpriteRenderer>().color = Color.blue;
-            if (tryingToLatch != ButtonColors.Null)
-            {
-                return;
-            }
             TryLatching(ButtonColors.Blue);
+        }
+        else
+        {
+            indicator.SetActive(false);
+
+            TryUnlatching();
         }
 
 
@@ -173,48 +169,32 @@ public class Ship : MonoBehaviour {
 
 
 
-        if (Input.GetButtonUp("Jump1_g" + playerControllerData.controllerId))
-        {
-            indicator.SetActive(false);
-            Unlatch(ButtonColors.Green);
-        }
-
-        if (Input.GetButtonUp("Fire1_g" + playerControllerData.controllerId))
-        {
-            indicator.SetActive(false);
-            Unlatch(ButtonColors.Red);
-        }
-
-        if (Input.GetButtonUp("Fire1_z" + playerControllerData.controllerId))
-        {
-            indicator.SetActive(false);
-            Unlatch(ButtonColors.Yellow);
-
-        }
-        if (Input.GetButtonUp("Fire1_s" + playerControllerData.controllerId))
-        {
-            indicator.SetActive(false);
-            Unlatch(ButtonColors.Blue);
-        }
-	
 	
 	}
 
-    void Unlatch(ButtonColors unlatchingColor)
+    public virtual void TryUnlatching()
     {
         tryingToLatch = ButtonColors.Null;
         List<Ship> shipsToRemove = new List<Ship>();
         foreach (Ship ship in connections.Keys)
         {
             Dictionary<ButtonColors, UltimateRope> connection = connections[ship];
-            if (connection.ContainsKey(unlatchingColor))
+            if ( (ship.tryingToLatch == ButtonColors.Null || !connection.ContainsKey(ship.tryingToLatch)) && ship != this  ) // leaky, recheck
             {
-                Destroy(connection[unlatchingColor].gameObject);
+                print(ship.name);
+                print("unlkatching ");
+                foreach (ButtonColors color in connection.Keys)
+                {
+                    Destroy(connection[color].gameObject);
+                }
                 ship.connections.Remove(this);
+                connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
+
             }
+
            // connections.Remove(ship);
         }
-        connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
+       // connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
 
 
     }

@@ -61,8 +61,8 @@ namespace tk2dEditor.SpriteCollectionEditor
 					GetTileCoordinateForSpriteSheet(spriteSheet, idX, idY, out x, out y);
 					
 					int spriteSlot = GetSpriteSlotForSpriteSheetCell(spriteSheetId, idX, idY);
+					SpriteCollection.textureRefs[spriteSlot] = spriteSheet.texture;
 					var param = SpriteCollection.textureParams[spriteSlot];
-					param.texture = spriteSheet.texture;
 					param.hasSpriteSheetId = true;
 					param.spriteSheetId = spriteSheetId;
 					param.spriteSheetX = idX;
@@ -91,6 +91,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 					int coordinateHash = GetSpriteCoordinateHash(p.spriteSheetX, p.spriteSheetY);
 					if (usedSpriteCoordinates.IndexOf(coordinateHash) == -1)
 					{
+						SpriteCollection.textureRefs[i] = null;
 						SpriteCollection.textureParams[i].Clear();
 					}
 				}
@@ -244,8 +245,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 			int border = 16;
 			float width = tex.width * zoomAmount;
 			float height = tex.height * zoomAmount;
-			Rect baseRect = GUILayoutUtility.GetRect(border * 2 + width, border * 2 + height, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-			tk2dGrid.Draw(baseRect);
+			Rect baseRect = GUILayoutUtility.GetRect(border * 2 + width, border * 2 + height, GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false));
 			Rect rect = new Rect(baseRect.x + border, baseRect.y + border, width, height);
 			
 			if (Event.current.type == EventType.ScrollWheel)
@@ -365,7 +365,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 			GUILayout.EndVertical();
 
 			// Inspector
-			tk2dGuiUtility.LookLikeControls(100.0f, 100.0f);
+			EditorGUIUtility.LookLikeControls(100.0f, 100.0f);
 			inspectorScrollBar = GUILayout.BeginScrollView(inspectorScrollBar, GUILayout.ExpandHeight(true), GUILayout.Width(host.InspectorWidth));
 
 			// Header

@@ -16,10 +16,8 @@ namespace tk2dRuntime.TileMap
 			
 			int[] spriteIds = chunk.spriteIds;
 			Vector3 tileSize = tileMap.data.tileSize;
-			int spriteCount = tileMap.SpriteCollectionInst.spriteDefinitions.Length;
+			int spriteCount = tileMap.spriteCollection.spriteDefinitions.Length;
 			Object[] tilePrefabs = tileMap.data.tilePrefabs;
-			tk2dSpriteDefinition firstSprite = tileMap.SpriteCollectionInst.FirstValidDefinition;
-			bool buildNormals = (firstSprite != null && firstSprite.normals != null && firstSprite.normals.Length > 0);
 			
 			Color32 clearColor = (useColor && tileMap.ColorChannel != null)?tileMap.ColorChannel.clearColor:Color.white;
 					
@@ -37,7 +35,7 @@ namespace tk2dRuntime.TileMap
 			float xOffsetMult = 0.0f, yOffsetMult = 0.0f;
 			tileMap.data.GetTileOffset(out xOffsetMult, out yOffsetMult);
 			
-			List<int>[] meshIndices = new List<int>[tileMap.SpriteCollectionInst.materials.Length];
+			List<int>[] meshIndices = new List<int>[tileMap.spriteCollection.materials.Length];
 			for (int j = 0; j < meshIndices.Length; ++j)
 				meshIndices[j] = new List<int>();
 			
@@ -47,12 +45,7 @@ namespace tk2dRuntime.TileMap
 				float xOffset = ((baseY + y) & 1) * xOffsetMult;
 				for (int x = x0; x != x1; x += dx)
 				{
-					int spriteId = spriteIds[y * tileMap.partitionSizeX + x];
-					int tile = BuilderUtil.GetTileFromRawTile(spriteId);
-					bool flipH = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.FlipX);
-					bool flipV = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.FlipY);
-					bool rot90 = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.Rot90);
-
+					int tile = spriteIds[y * tileMap.partitionSizeX + x];
 					Vector3 currentPos = new Vector3(tileSize.x * (x + xOffset), tileSize.y * y, 0);
 	
 					if (tile < 0 || tile >= spriteCount) 
@@ -61,13 +54,11 @@ namespace tk2dRuntime.TileMap
 					if (skipPrefabs && tilePrefabs[tile])
 						continue;
 					
-					var sprite = tileMap.SpriteCollectionInst.spriteDefinitions[tile];
+					var sprite = tileMap.spriteCollection.spriteDefinitions[tile];
 					
 					int baseVertex = meshVertices.Count;
 					for (int v = 0; v < sprite.positions.Length; ++v)
 					{
-						Vector3 flippedPos = BuilderUtil.ApplySpriteVertexTileFlags(tileMap, sprite, sprite.positions[v], flipH, flipV, rot90);
-
 						if (useColor)
 						{
 							Color tileColorx0y0 = colorChunk.colors[y * colorChunkSize + x];
@@ -75,7 +66,7 @@ namespace tk2dRuntime.TileMap
 							Color tileColorx0y1 = colorChunk.colors[(y + 1) * colorChunkSize + x];
 							Color tileColorx1y1 = colorChunk.colors[(y + 1) * colorChunkSize + (x + 1)];
 							
-							Vector3 centeredSpriteVertex = flippedPos - sprite.untrimmedBoundsData[0];
+							Vector3 centeredSpriteVertex = sprite.positions[v] - sprite.untrimmedBoundsData[0];
 							Vector3 alignedSpriteVertex = centeredSpriteVertex + tileMap.data.tileSize * 0.5f;
 							float tileColorX = Mathf.Clamp01(alignedSpriteVertex.x / tileMap.data.tileSize.x);
 							float tileColorY = Mathf.Clamp01(alignedSpriteVertex.y / tileMap.data.tileSize.y);
@@ -90,26 +81,20 @@ namespace tk2dRuntime.TileMap
 						{
 							meshColors.Add(clearColor);
 						}
-
-						meshVertices.Add(currentPos + flippedPos);
+						
+						meshVertices.Add(currentPos + sprite.positions[v]);
 						meshUvs.Add(sprite.uvs[v]);
 					}
-
-					bool reverseIndices = false; // flipped?
-					if (flipH) reverseIndices = !reverseIndices;
-					if (flipV) reverseIndices = !reverseIndices;
 					
 					List<int> indices = meshIndices[sprite.materialId];
-					for (int i = 0; i < sprite.indices.Length; ++i) {
-						int j = reverseIndices ? (sprite.indices.Length - 1 - i) : i;
-						indices.Add(baseVertex + sprite.indices[j]);
-					}
+					for (int i = 0; i < sprite.indices.Length; ++i)
+						indices.Add(baseVertex + sprite.indices[i]);
 					
 				}
 			}
 			
 			if (chunk.mesh == null)
-				chunk.mesh = tk2dUtil.CreateMesh();
+				chunk.mesh = tileMap.GetOrCreateMesh();
 
 			chunk.mesh.vertices = meshVertices.ToArray();
 			chunk.mesh.uv = meshUvs.ToArray();
@@ -122,7 +107,7 @@ namespace tk2dRuntime.TileMap
 			{
 				if (indices.Count > 0)
 				{
-					materials.Add(tileMap.SpriteCollectionInst.materialInsts[materialId]);
+					materials.Add(tileMap.spriteCollection.materials[materialId]);
 					subMeshCount++;
 				}
 				materialId++;
@@ -143,9 +128,9 @@ namespace tk2dRuntime.TileMap
 			}
 			
 			chunk.mesh.RecalculateBounds();
-			if (buildNormals) {
+			
+			if (tileMap.serializeRenderData)
 				chunk.mesh.RecalculateNormals();
-			}
 
 			var meshFilter = chunk.gameObject.GetComponent<MeshFilter>();
 			meshFilter.sharedMesh = chunk.mesh;

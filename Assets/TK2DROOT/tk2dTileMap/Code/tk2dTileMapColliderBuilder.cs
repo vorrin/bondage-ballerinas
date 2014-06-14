@@ -5,11 +5,10 @@ using System.Collections.Generic;
 
 namespace tk2dRuntime.TileMap
 {
-	public static class ColliderBuilder3D
+	public static class ColliderBuilder
 	{
-		public static void Build(tk2dTileMap tileMap, bool forceBuild)
+		public static void Build(tk2dTileMap tileMap)
 		{
-			bool incremental = !forceBuild;
 			int numLayers = tileMap.Layers.Length;
 			for (int layerId = 0; layerId < numLayers; ++layerId)
 			{
@@ -25,18 +24,10 @@ namespace tk2dRuntime.TileMap
 						int baseX = cellX * layer.divX;
 						var chunk = layer.GetChunk(cellX, cellY);
 						
-						if (incremental && !chunk.Dirty)
-							continue;
-						
 						if (chunk.IsEmpty)
 							continue;
 						
 						BuildForChunk(tileMap, chunk, baseX, baseY);
-
-						PhysicMaterial material = tileMap.data.Layers[layerId].physicMaterial;
-						if (chunk.meshCollider != null) {
-							chunk.meshCollider.sharedMaterial = material;
-						}
 					}
 				}
 			}
@@ -64,20 +55,11 @@ namespace tk2dRuntime.TileMap
 				// Optimize (remove unused vertices, reindex)
 			}
 	
-#if !(UNITY_3_5 || UNITY_4_0 || UNITY_4_0_1 || UNITY_4_1 || UNITY_4_2)
-			foreach (EdgeCollider2D c2d in chunk.edgeColliders) {
-				if (c2d != null) {
-					tk2dUtil.DestroyImmediate(c2d);
-				}
-			}
-			chunk.edgeColliders.Clear();
-#endif
-
 			if (localMeshVertices.Length > 0)
 			{
 				if (chunk.colliderMesh != null)
 				{
-					tk2dUtil.DestroyImmediate(chunk.colliderMesh);
+					GameObject.DestroyImmediate(chunk.colliderMesh);
 					chunk.colliderMesh = null;
 				}
 				
@@ -85,14 +67,16 @@ namespace tk2dRuntime.TileMap
 				{
 					chunk.meshCollider = chunk.gameObject.GetComponent<MeshCollider>();
 					if (chunk.meshCollider == null)
-						chunk.meshCollider = tk2dUtil.AddComponent<MeshCollider>(chunk.gameObject);
+						chunk.meshCollider = chunk.gameObject.AddComponent<MeshCollider>();
 				}
 				
-				chunk.colliderMesh = tk2dUtil.CreateMesh();
+				chunk.colliderMesh = tileMap.GetOrCreateMesh();
 				chunk.colliderMesh.vertices = localMeshVertices;
 				chunk.colliderMesh.triangles = localMeshIndices;
 
 				chunk.colliderMesh.RecalculateBounds();
+				if (tileMap.serializeRenderData)
+					chunk.mesh.RecalculateNormals();
 				
 				chunk.meshCollider.sharedMesh = chunk.colliderMesh;
 			}
@@ -108,7 +92,7 @@ namespace tk2dRuntime.TileMap
 			List<Vector3> vertexList = new List<Vector3>();
 			List<int> indexList = new List<int>();
 			
-			int spriteCount = tileMap.SpriteCollectionInst.spriteDefinitions.Length;
+			int spriteCount = tileMap.spriteCollection.spriteDefinitions.Length;
 			Vector3 tileSize = tileMap.data.tileSize;
 			
 			var tilePrefabs = tileMap.data.tilePrefabs;
@@ -122,47 +106,33 @@ namespace tk2dRuntime.TileMap
 				float xOffset = ((baseY + y) & 1) * xOffsetMult;
 				for (int x = 0; x < tileMap.partitionSizeX; ++x)
 				{
-					int spriteId = chunkData[y * tileMap.partitionSizeX + x];
-					int spriteIdx = BuilderUtil.GetTileFromRawTile(spriteId);
+					int tile = chunkData[y * tileMap.partitionSizeX + x];
 					Vector3 currentPos = new Vector3(tileSize.x * (x + xOffset), tileSize.y * y, 0);
 	
-					if (spriteIdx < 0 || spriteIdx >= spriteCount) 
+					if (tile < 0 || tile >= spriteCount) 
 						continue;
 					
-					if (tilePrefabs[spriteIdx])
+					if (tilePrefabs[tile])
 						continue;
-
-					bool flipH = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.FlipX);
-					bool flipV = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.FlipY);
-					bool rot90 = BuilderUtil.IsRawTileFlagSet(spriteId, tk2dTileFlags.Rot90);
-
-					bool reverseIndices = false;
-					if (flipH) reverseIndices = !reverseIndices;
-					if (flipV) reverseIndices = !reverseIndices;
-
-					var spriteData = tileMap.SpriteCollectionInst.spriteDefinitions[spriteIdx];
+					
+					var spriteData = tileMap.spriteCollection.spriteDefinitions[tile];
 					int baseVertexIndex = vertexList.Count;
 					
 					if (spriteData.colliderType == tk2dSpriteDefinition.ColliderType.Box)
 					{
-						Vector3 origin = spriteData.colliderVertices[0];
+						Vector3 origin = spriteData.colliderVertices[0] + currentPos;
 						Vector3 extents = spriteData.colliderVertices[1];
 						Vector3 min = origin - extents;
 						Vector3 max = origin + extents;
-
-						Vector3[] pos = new Vector3[8];
-						pos[0] = new Vector3(min.x, min.y, min.z);
-						pos[1] = new Vector3(min.x, min.y, max.z);
-						pos[2] = new Vector3(max.x, min.y, min.z);
-						pos[3] = new Vector3(max.x, min.y, max.z);
-						pos[4] = new Vector3(min.x, max.y, min.z);
-						pos[5] = new Vector3(min.x, max.y, max.z);
-						pos[6] = new Vector3(max.x, max.y, min.z);
-						pos[7] = new Vector3(max.x, max.y, max.z);
-						for (int i = 0; i < 8; ++i) {
-							Vector3 flippedPos = BuilderUtil.ApplySpriteVertexTileFlags(tileMap, spriteData, pos[i], flipH, flipV, rot90);
-							vertexList.Add (flippedPos + currentPos);
-						}
+						
+						vertexList.Add(new Vector3(min.x, min.y, min.z));
+						vertexList.Add(new Vector3(min.x, min.y, max.z));
+						vertexList.Add(new Vector3(max.x, min.y, min.z));
+						vertexList.Add(new Vector3(max.x, min.y, max.z));
+						vertexList.Add(new Vector3(min.x, max.y, min.z));
+						vertexList.Add(new Vector3(min.x, max.y, max.z));
+						vertexList.Add(new Vector3(max.x, max.y, min.z));
+						vertexList.Add(new Vector3(max.x, max.y, max.z));
 	
 	//						int[] indicesBack = { 0, 1, 2, 2, 1, 3, 6, 5, 4, 7, 5, 6, 3, 7, 6, 2, 3, 6, 4, 5, 1, 4, 1, 0 };
 						int[] indicesFwd = { 2, 1, 0, 3, 1, 2, 4, 5, 6, 6, 5, 7, 6, 7, 3, 6, 3, 2, 1, 5, 4, 0, 1, 4 };
@@ -170,23 +140,21 @@ namespace tk2dRuntime.TileMap
 						var srcIndices = indicesFwd;
 						for (int i = 0; i < srcIndices.Length; ++i)
 						{
-							int j = reverseIndices ? (srcIndices.Length - 1 - i) : i;
-							indexList.Add(baseVertexIndex + srcIndices[j]);
+							indexList.Add(baseVertexIndex + srcIndices[i]);
 						}
 					}
 					else if (spriteData.colliderType == tk2dSpriteDefinition.ColliderType.Mesh)
 					{
 						for (int i = 0; i < spriteData.colliderVertices.Length; ++i)
 						{
-							Vector3 flippedPos = BuilderUtil.ApplySpriteVertexTileFlags(tileMap, spriteData, spriteData.colliderVertices[i], flipH, flipV, rot90);
-							vertexList.Add(flippedPos + currentPos);
+							Vector3 pos = spriteData.colliderVertices[i] + currentPos;
+							vertexList.Add(pos);
 						}
 						
 						var srcIndices = spriteData.colliderIndicesFwd;
 						for (int i = 0; i < srcIndices.Length; ++i)
 						{
-							int j = reverseIndices ? (srcIndices.Length - 1 - i) : i;
-							indexList.Add(baseVertexIndex + srcIndices[j]);
+							indexList.Add(baseVertexIndex + srcIndices[i]);
 						}
 					}
 				}

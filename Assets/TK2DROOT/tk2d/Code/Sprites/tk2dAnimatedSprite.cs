@@ -1,72 +1,70 @@
 using UnityEngine;
 using System.Collections;
 
-[AddComponentMenu("2D Toolkit/Sprite/tk2dAnimatedSprite (Obsolete)")]
+[AddComponentMenu("2D Toolkit/Sprite/tk2dAnimatedSprite")]
+/// <summary>
+/// Sprite implementation which plays and maintains animations
+/// </summary>
 public class tk2dAnimatedSprite : tk2dSprite
 {
-#region SpriteAnimatorRouting
-	[SerializeField] tk2dSpriteAnimator _animator = null;
-	public tk2dSpriteAnimator Animator {
-		get {
-			CheckAddAnimatorInternal();
-			return _animator;
-		}
-	}
-
-	void CheckAddAnimatorInternal() {
-		if (_animator == null) {
-			_animator = gameObject.GetComponent<tk2dSpriteAnimator>();
-			if (_animator == null) {
-				_animator = gameObject.AddComponent<tk2dSpriteAnimator>();
-				_animator.Library = anim;
-				_animator.DefaultClipId = clipId;
-				_animator.playAutomatically = playAutomatically;
-			}
-		}
-	}
-#endregion
-
-	// Required for serialization
-	[SerializeField] private tk2dSpriteAnimation anim;
-	[SerializeField] private int clipId = 0;
+	/// <summary>
+	/// <see cref="tk2dSpriteAnimation"/>
+	/// </summary>
+	public tk2dSpriteAnimation anim;
+	/// <summary>
+	/// Currently playing/active clip
+	/// </summary>
+	public int clipId = 0;
+	/// <summary>
+	/// Interface option to play the animation automatically when instantiated / game is started. Useful for background looping animations.
+	/// </summary>
 	public bool playAutomatically = false;
-	public bool createCollider = false;
-
-	// Required for backwards compatility
-	protected override bool NeedBoxCollider() {
-		return createCollider;
-	}
 	
-	public tk2dSpriteAnimation Library {
-		get {
-			return Animator.Library;
-		}
-		set {
-			Animator.Library = value;
-		}
-	}
+	// This is now an int so we'll be able to or bitmasks
+	static State globalState = 0;
 
-	public int DefaultClipId {
-		get {
-			return Animator.DefaultClipId;
-		}
-		set {
-			Animator.DefaultClipId = value;
-		}
-	}
-
-	// Wrapped functions
+	/// <summary>
+	/// Globally pause all animated sprites
+	/// </summary>
 	public static bool g_paused
 	{
-		get { return tk2dSpriteAnimator.g_Paused; }
-		set { tk2dSpriteAnimator.g_Paused = value; }
+		get { return (globalState & State.Paused) != 0; }
+		set { globalState = value?State.Paused:(State)0; }
 	}
 
+	/// <summary>
+	/// Get or set pause state on this current sprite
+	/// </summary>
 	public bool Paused
 	{
-		get { return Animator.Paused; }
-		set { Animator.Paused = value; }
+		get { return (state & State.Paused) != 0; }
+		set 
+		{ 
+			if (value) state |= State.Paused;
+			else state &= ~State.Paused;
+		}
 	}
+
+
+	/// <summary>
+	/// Interface option to create an animated box collider for this animated sprite
+	/// </summary>
+	public bool createCollider = false;
+	
+	/// <summary>
+	/// Currently active clip
+	/// </summary>
+	tk2dSpriteAnimationClip currentClip = null;
+	
+	/// <summary>
+	/// Time into the current clip. This is in clip local time (i.e. (int)clipTime = currentFrame)
+	/// </summary>
+    float clipTime = 0.0f;
+	
+	/// <summary>
+	/// Previous frame identifier
+	/// </summary>
+	int previousFrame = -1;
 	
 	/// <summary>
 	/// Animation complete delegate 
@@ -86,44 +84,21 @@ public class tk2dAnimatedSprite : tk2dSprite
 	/// The triggering frame is passed to the delegate, and the eventInfo / Int / Float can be extracted from there.
 	/// </summary>
 	public AnimationEventDelegate animationEventDelegate;
-
-	void ProxyCompletedHandler(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip) {
-		if (animationCompleteDelegate != null) {
-			int clipId = -1;
-			tk2dSpriteAnimationClip[] clips = (anim.Library != null) ? anim.Library.clips : null;
-			if (clips != null) {
-				for (int i = 0; i < clips.Length; ++i) {
-					if (clips[i] == clip) {
-						clipId = i;
-						break;
-					}
-				}
-			}
-
-			animationCompleteDelegate(this, clipId);
-		}
-	}
-
-	void ProxyEventTriggeredHandler(tk2dSpriteAnimator anim, tk2dSpriteAnimationClip clip, int frame) {
-		if (animationEventDelegate != null) {
-			animationEventDelegate(this, clip, clip.frames[frame], frame);
-		}
-	}
-
-	void OnEnable() {
-		Animator.AnimationCompleted = ProxyCompletedHandler;
-		Animator.AnimationEventTriggered = ProxyEventTriggeredHandler;
-	}
-
-	void OnDisable() {
-		Animator.AnimationCompleted = null;
-		Animator.AnimationEventTriggered = null;
-	}
-
-	// execution order on tk2dSpriteAnimator should be AFTER tk2dAnimatedSprite
-	void Start()
+	
+	enum State 
 	{
-		CheckAddAnimatorInternal();
+		Init = 0,
+		Playing = 1,
+		Paused = 2,
+	}
+	State state = State.Init; // init state. Do not use elsewhere
+	
+	new void Start()
+	{
+		base.Start();
+		
+		if (playAutomatically)
+			Play(clipId);
 	}
 	
 	/// <summary>
@@ -133,105 +108,445 @@ public class tk2dAnimatedSprite : tk2dSprite
 	{
 		var clip = anim.clips[clipId];
 		tk2dAnimatedSprite animSprite = go.AddComponent<tk2dAnimatedSprite>();
-		animSprite.SetSprite(clip.frames[0].spriteCollection, clip.frames[0].spriteId);
+		animSprite.collection = clip.frames[0].spriteCollection;
+		animSprite.spriteId = clip.frames[0].spriteId;
 		animSprite.anim = anim;
 		return animSprite;
 	}
 	
-#region Play
-	public void Play() {
-		if (Animator.DefaultClip != null) {
-			Animator.Play(Animator.DefaultClip);
-		}
+	/// <summary>
+	/// Play the active clip. Will restart the clip if called again.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	public void Play()
+	{
+		Play(clipId);
 	}
-	public void Play(float clipStartTime) {
-		if (Animator.DefaultClip != null) {
-			Animator.PlayFrom(Animator.DefaultClip, clipStartTime);
-		}
+	
+	/// <summary>
+	/// Play the active clip, starting "clipStartTime" seconds into the clip. 
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	public void Play(float clipStartTime)
+	{
+		Play(clipId, clipStartTime);
 	}
-	public void PlayFromFrame(int frame) {
-		if (Animator.DefaultClip != null) {
-			Animator.PlayFromFrame(Animator.DefaultClip, frame);
-		}
+	
+	/// <summary>
+	/// Play the active clip, starting at the frame specified.
+	/// Will restart the clip at frame if called while the clip is playing.
+	/// </summary>
+	public void PlayFromFrame(int frame)
+	{
+		PlayFromFrame(clipId, frame);
 	}
-	public void Play(string name) {
-		Animator.Play(name);
+	
+	/// <summary>
+	/// Play the specified clip.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='name'>
+	/// Name of clip. Try to cache the animation clip Id and use that instead for performance.
+	/// </param>
+	public void Play(string name)
+	{
+		int id = anim?anim.GetClipIdByName(name):-1;
+		Play(id);
 	}
-	public void PlayFromFrame(string name, int frame) {
-		Animator.PlayFromFrame(name, frame);
+	
+	/// <summary>
+	/// Play the specified clip, starting at the frame specified.
+	/// Will restart the clip at frame if called while the clip is playing.
+	/// </summary>
+	/// <param name='name'> Name of clip. Try to cache the animation clip Id and use that instead for performance. </param>
+	/// <param name='frame'> Frame to start playing from. </param>
+	public void PlayFromFrame(string name, int frame)
+	{
+		int id = anim?anim.GetClipIdByName(name):-1;
+		PlayFromFrame(id, frame);
 	}
-	public void Play(string name, float clipStartTime) {
-		Animator.PlayFrom(name, clipStartTime);
+	
+	/// <summary>
+	/// Play the specified clip, starting "clipStartTime" seconds into the clip.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='name'> Name of clip. Try to cache the animation clip Id and use that instead for performance. </param>
+	/// <param name='clipStartTime'> Clip start time in seconds. </param>
+	public void Play(string name, float clipStartTime)
+	{
+		int id = anim?anim.GetClipIdByName(name):-1;
+		Play(id, clipStartTime);
 	}
-	public void Play(tk2dSpriteAnimationClip clip, float clipStartTime) {
-		Animator.PlayFrom(clip, clipStartTime);
+	
+	/// <summary>
+	/// The currently active or playing <see cref="tk2dSpriteAnimationClip"/>
+	/// </summary>
+	public tk2dSpriteAnimationClip CurrentClip
+	{
+		get { return currentClip; }
 	}
-	public void Play(tk2dSpriteAnimationClip clip, float clipStartTime, float overrideFps) {
-		Animator.Play(clip, clipStartTime, overrideFps);
+	
+	/// <summary>
+	/// The current clip time in seconds
+	/// </summary>
+	public float ClipTimeSeconds
+	{
+		get { return clipTime / currentClip.fps; }	
 	}
-#endregion
 
-	public tk2dSpriteAnimationClip CurrentClip { get { return Animator.CurrentClip; } }
-	public float ClipTimeSeconds { get { return Animator.ClipTimeSeconds; } }
+    /// <summary>
+    /// The current raw clip time
+    /// </summary>
+    public float ClipTime
+    {
+        get { return clipTime; }
+        set { clipTime = value; }
+    }
 	
-	public float ClipFps {
-		get { return Animator.ClipFps; }
-		set { Animator.ClipFps = value; }
+	/// <summary>
+	/// Stop the currently playing clip.
+	/// </summary>
+	public void Stop()
+	{
+		state &= ~State.Playing;
 	}
 	
-	public void Stop() {
-		Animator.Stop();
+	/// <summary>
+	/// Stops the currently playing animation and reset to the first frame in the animation
+	/// </summary>
+	public void StopAndResetFrame()
+	{
+		if (currentClip != null)
+		{
+			SwitchCollectionAndSprite(currentClip.frames[0].spriteCollection, currentClip.frames[0].spriteId);
+		}
+		Stop();
 	}
 	
-	public void StopAndResetFrame() {
-		Animator.StopAndResetFrame();
-	}
-	
+	/// <summary>
+	/// Is a clip currently playing? Obselete, use <see cref="tk2dSpriteAnimation.Playing"/> instead.
+	/// </summary>
 	[System.Obsolete]
-	public bool isPlaying() {
-		return Animator.Playing;
+	public bool isPlaying()
+	{
+		return Playing;
 	}
 
-	public bool IsPlaying(string name) {
-		return Animator.Playing;
-	}
-
-	public bool IsPlaying(tk2dSpriteAnimationClip clip) {
-		return Animator.IsPlaying(clip);
-	}
-
-
-	public bool Playing { 
-		get { return Animator.Playing; }
+	/// <summary>
+	/// Is a clip currently playing? 
+	/// Will return true if the clip is playing, but is paused.
+	/// </summary>
+	public bool Playing
+	{ 
+		get { return (state & State.Playing) != 0; }
 	}
 	
-	public int GetClipIdByName(string name) {
-		return Animator.GetClipIdByName(name);
+	protected override bool NeedBoxCollider()
+	{
+		return createCollider;
+	}
+	
+	/// <summary>
+	/// Resolves an animation clip by name and returns a unique id.
+	/// This is a convenient alias to <see cref="tk2dSpriteAnimation.GetClipIdByName"/>
+	/// </summary>
+	/// <returns>
+	/// Unique Animation Clip Id.
+	/// </returns>
+	/// <param name='name'>Case sensitive clip name, as defined in <see cref="tk2dSpriteAnimationClip"/>. </param>
+	public int GetClipIdByName(string name)
+	{
+		return anim?anim.GetClipIdByName(name):-1;
+	}
+	
+	/// <summary>
+	/// Play the clip specified by identifier.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='id'>
+	/// Use <see cref="GetClipIdByName"/> to resolve a named clip id
+	/// </param>
+	public void Play(int id)
+	{
+		Play(id, 0.0f);
+	}
+	
+	/// <summary>
+	/// Play the clip specified by identifier, starting at the specified frame.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='id'>Use <see cref="GetClipIdByName"/> to resolve a named clip id</param>	
+	/// <param name='frame'> Frame to start from. </param>
+	public void PlayFromFrame(int id, int frame)
+	{
+		var clip = anim.clips[id];
+		Play(id, (frame + 0.001f) / clip.fps); // offset ever so slightly to round down correctly
+	}
+	
+	// Warps the current active frame to the local time (i.e. float frame number) specified. 
+	// Ensure that time doesn't exceed the number of frames. Will warp silently otherwise
+	void WarpClipToLocalTime(tk2dSpriteAnimationClip clip, float time)
+	{
+		clipTime = time;
+		int frameId = (int)clipTime % clip.frames.Length;
+		tk2dSpriteAnimationFrame frame = clip.frames[frameId];
+		
+		SwitchCollectionAndSprite(frame.spriteCollection, frame.spriteId);
+		if (frame.triggerEvent)
+		{
+			if (animationEventDelegate != null)
+				animationEventDelegate(this, clip, frame, frameId);
+		}
+		previousFrame = frameId;
 	}
 
-	public tk2dSpriteAnimationClip GetClipByName(string name) {
-		return Animator.GetClipByName(name);
-	}
-	
-	public static float DefaultFps { get { return tk2dSpriteAnimator.DefaultFps; } }
-
-	public void Pause() {
-		Animator.Pause();
-	}
-	
-	public void Resume() {
-		Animator.Resume();
-	}
-	
-	public void SetFrame(int currFrame) {
-		Animator.SetFrame(currFrame);
+	/// <summary>
+	/// Play the clip specified by identifier.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='id'>Use <see cref="GetClipIdByName"/> to resolve a named clip id</param>	
+	/// <param name='clipStartTime'> Clip start time in seconds. </param>
+	public void Play(int clipId, float clipStartTime)
+	{
+		this.clipId = clipId;
+		Play(anim.clips[clipId], clipStartTime);
 	}
 
-	public void SetFrame(int currFrame, bool triggerEvent) {
-		Animator.SetFrame(currFrame, triggerEvent);
+	/// <summary>
+	/// Play the clip specified by identifier.
+	/// Will restart the clip at clipStartTime if called while the clip is playing.
+	/// </summary>
+	/// <param name='clip'>The clip to play. </param>	
+	/// <param name='clipStartTime'> Clip start time in seconds. A value of 0 will start the clip from the beginning </param>
+	public void Play(tk2dSpriteAnimationClip clip, float clipStartTime)
+	{
+		if (clip != null)
+		{
+			state |= State.Playing;
+			currentClip = clip;
+
+			// Simply swap, no animation is played
+			if (currentClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Single || currentClip.frames == null)
+			{
+				WarpClipToLocalTime(currentClip, 0.0f);
+				state &= ~State.Playing;
+			}
+			else if (currentClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.RandomFrame || currentClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.RandomLoop)
+			{
+				int rnd = Random.Range(0, currentClip.frames.Length - 1);
+				WarpClipToLocalTime(currentClip, rnd);
+
+				if (currentClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.RandomFrame)
+				{
+					previousFrame = -1;
+					state &= ~State.Playing;
+				}
+			}
+			else
+			{
+				// clipStartTime is in seconds
+				// clipTime is in clip local time (ignoring fps)
+				float time = clipStartTime * currentClip.fps;
+				if (currentClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Once && time >= currentClip.fps * currentClip.frames.Length)
+				{
+					// warp to last frame
+					WarpClipToLocalTime(currentClip, currentClip.frames.Length - 1);
+					state &= ~State.Playing;
+				}
+				else
+				{
+					WarpClipToLocalTime(currentClip, time);
+					
+					// force to the last frame
+					clipTime = time;
+				}
+			}
+		}
+		else
+		{
+			OnCompleteAnimation();
+			state &= ~State.Playing;
+		}
 	}
 	
-	public void UpdateAnimation(float deltaTime) {
-		Animator.UpdateAnimation(deltaTime);
+	/// <summary>
+	/// Pause the currently playing clip. Will do nothing if the clip is currently paused.
+	/// </summary>
+	public void Pause()
+	{
+		state |= State.Paused;
+	}
+	
+	/// <summary>
+	/// Resume the currently paused clip. Will do nothing if the clip hasn't been paused.
+	/// </summary>
+	public void Resume()
+	{
+		state &= ~State.Paused;
+	}
+	
+	void OnCompleteAnimation()
+	{
+		previousFrame = -1;
+		if (animationCompleteDelegate != null)
+			animationCompleteDelegate(this, clipId);
+	}
+	
+	/// <summary>
+	/// Sets the current frame. The animation will wrap if the selected frame exceeds the 
+	/// number of frames in the clip.
+	/// This variant WILL trigger an event if the current frame has a trigger defined.
+	/// </summary>
+	public void SetFrame(int currFrame)
+	{
+		SetFrame(currFrame, true);
+	}
+
+	/// <summary>
+	/// Sets the current frame. The animation will wrap if the selected frame exceeds the 
+	/// number of frames in the clip.
+	/// </summary>
+	public void SetFrame(int currFrame, bool triggerEvent)
+	{
+		if (currentClip == null && anim != null)
+		{
+			currentClip = anim.clips[clipId];
+		}
+
+		if (triggerEvent && currentClip != null && currentClip.frames.Length > 0 && currFrame >= 0)
+		{
+			int frame = currFrame % currentClip.frames.Length;
+			SetFrameInternal(frame);
+			ProcessEvents(frame - 1, frame, 1);
+		}
+	}
+	
+	void SetFrameInternal(int currFrame)
+	{
+		if (previousFrame != currFrame)
+		{
+			SwitchCollectionAndSprite( currentClip.frames[currFrame].spriteCollection, currentClip.frames[currFrame].spriteId );
+			previousFrame = currFrame;
+		}
+	}
+	
+	void ProcessEvents(int start, int last, int direction)
+	{
+		if (animationEventDelegate == null || start == last) 
+			return;
+		int end = last + direction;
+		var frames = currentClip.frames;
+		for (int frame = start + direction; frame != end; frame += direction)
+		{
+			if (frames[frame].triggerEvent)
+				animationEventDelegate(this, currentClip, frames[frame], frame);
+		}
+	}
+	
+	void LateUpdate() 
+	{
+#if UNITY_EDITOR
+		// Don't play animations when not in play mode
+		if (!Application.isPlaying)
+			return;
+#endif
+
+		// Only process when clip is playing
+		var localState = state | globalState;
+		if (localState != State.Playing)
+			return;
+
+		// Current clip should not be null at this point
+		clipTime += Time.deltaTime * currentClip.fps;
+		int _previousFrame = previousFrame;
+		
+		switch (currentClip.wrapMode)
+		{
+			case tk2dSpriteAnimationClip.WrapMode.Loop: 
+			case tk2dSpriteAnimationClip.WrapMode.RandomLoop:
+			{
+				int currFrame = (int)clipTime % currentClip.frames.Length;
+				SetFrameInternal(currFrame);
+				if (currFrame < _previousFrame) // wrap around
+				{
+					ProcessEvents(_previousFrame, currentClip.frames.Length - 1, 1); // up to end of clip
+					ProcessEvents(-1, currFrame, 1); // process up to current frame
+				}
+				else
+				{
+					ProcessEvents(_previousFrame, currFrame, 1);
+				}
+				break;
+			}
+
+			case tk2dSpriteAnimationClip.WrapMode.LoopSection:
+			{
+				int currFrame = (int)clipTime;
+				int currFrameLooped = currentClip.loopStart + ((currFrame - currentClip.loopStart) % (currentClip.frames.Length - currentClip.loopStart));
+				if (currFrame >= currentClip.loopStart)
+				{
+					SetFrameInternal(currFrameLooped);
+					currFrame = currFrameLooped;
+					if (_previousFrame < currentClip.loopStart)
+					{
+						ProcessEvents(_previousFrame, currentClip.loopStart - 1, 1); // processed up to loop-start
+						ProcessEvents(currentClip.loopStart - 1, currFrame, 1); // to current frame, doesn't cope if already looped once
+					}
+					else 
+					{
+						if (currFrame < _previousFrame)
+						{
+							ProcessEvents(_previousFrame, currentClip.frames.Length - 1, 1); // up to end of clip
+							ProcessEvents(currentClip.loopStart - 1, currFrame, 1); // up to current frame
+						}
+						else
+						{
+							ProcessEvents(_previousFrame, currFrame, 1); // this doesn't cope with multi loops within one frame
+						}
+					}
+				}
+				else
+				{
+					SetFrameInternal(currFrame);
+					ProcessEvents(_previousFrame, currFrame, 1);
+				}
+				break;
+			}
+
+			case tk2dSpriteAnimationClip.WrapMode.PingPong:
+			{
+				int currFrame = (int)clipTime % (currentClip.frames.Length + currentClip.frames.Length - 2);
+				int dir = 1;
+				if (currFrame >= currentClip.frames.Length)
+				{
+					currFrame = 2 * currentClip.frames.Length - 2 - currFrame;
+					dir = -1;
+				}
+				// This is likely to be buggy - this needs to be rewritten storing prevClipTime and comparing that rather than previousFrame
+				// as its impossible to detect direction with this, when running at frame speeds where a transition occurs within a frame
+				if (currFrame < _previousFrame) dir = -1;
+				SetFrameInternal(currFrame);
+				ProcessEvents(_previousFrame, currFrame, dir);
+				break;
+			}		
+
+			case tk2dSpriteAnimationClip.WrapMode.Once:
+			{
+				int currFrame = (int)clipTime;
+				if (currFrame >= currentClip.frames.Length)
+				{
+					SetFrameInternal(currentClip.frames.Length - 1); // set to last frame
+					ProcessEvents(_previousFrame, currentClip.frames.Length - 1, 1);
+					state &= ~State.Playing;
+					OnCompleteAnimation();
+				}
+				else
+				{
+					SetFrameInternal(currFrame);
+					ProcessEvents(_previousFrame, currFrame, 1);
+				}
+				break;
+			}
+		}
 	}
 }

@@ -18,15 +18,6 @@ public class tk2dSparseTile
 		spriteId = -1;
 		blendAmount = 0.0f;
 	}
-
-	public tk2dSparseTile(tk2dSparseTile source)
-	{
-		this.x = source.x;
-		this.y = source.y;
-		this.layer = source.layer;
-		this.spriteId = source.spriteId;
-		this.blendAmount = source.blendAmount;
-	}
 	
 	public tk2dSparseTile(int x, int y, int layer, int spriteId)
 	{
@@ -96,25 +87,6 @@ public class tk2dTileMapEditorBrush
 		};
 		UpdateBrushHash();
 	}
-
-	public tk2dTileMapEditorBrush(tk2dTileMapEditorBrush source)
-	{
-		this.name = source.name;
-		this.type = source.type;
-		this.paintMode = source.paintMode;
-		
-		tiles = new tk2dSparseTile[source.tiles.Length];		
-		for (int i = 0; i < source.tiles.Length; ++i)
-			tiles[i] = new tk2dSparseTile(source.tiles[i]);
-		
-		multiSelectTiles = new int[source.multiSelectTiles.Length];
-		for (int i = 0; i < source.multiSelectTiles.Length; ++i)
-			multiSelectTiles[i] = source.multiSelectTiles[i];
-	
-		edgeMode = source.edgeMode;
-		multiLayer = source.multiLayer;
-		overrideWithSpriteBounds = source.overrideWithSpriteBounds;
-	}
 	
 	public bool Empty
 	{
@@ -151,36 +123,6 @@ public class tk2dTileMapEditorBrush
 			}
 		}
 		return brushHash;
-	}
-
-	public void ClipTiles(int xMin, int yMin, int xMax, int yMax) {
-		int n = tiles.Length;
-		for (int i = 0; i < n;) {
-			if (tiles[i].x < xMin || tiles[i].y < yMin || tiles[i].x > xMax || tiles[i].y > yMax)
-				tiles[i] = tiles[--n];
-			else
-				++i;
-		}
-		if (n < tiles.Length) System.Array.Resize(ref tiles, n);
-	}
-
-	public void SortTiles(bool leftToRight, bool bottomToTop) {
-		int n = tiles.Length;
-		for (int i = 0; i < n; ++i) {
-			for (int j = i + 1; j < n; ++j) {
-				bool swap = false;
-				if (tiles[i].y != tiles[j].y) {
-					swap = ((tiles[i].y < tiles[j].y) != bottomToTop);
-				} else {
-					swap = ((tiles[i].x < tiles[j].x) != leftToRight);
-				}
-				if (swap) {
-					tk2dSparseTile tmp = tiles[i];
-					tiles[i] = tiles[j];
-					tiles[j] = tmp;
-				}
-			}
-		}
 	}
 }
 
@@ -237,8 +179,6 @@ public class tk2dTileMapEditorData : ScriptableObject
 	public bool showPalette = true;
 	
 	public int layer = 0;
-
-	public List<tk2dTileMapScratchpad> scratchpads = new List<tk2dTileMapScratchpad>();
 	
 	public void InitBrushes(tk2dSpriteCollectionData spriteCollection)
 	{

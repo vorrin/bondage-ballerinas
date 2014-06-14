@@ -2,11 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [System.Serializable]
-public class tk2dCollider2DData {
-	public Vector2[] points = new Vector2[0];	
-}
-
-[System.Serializable]
 /// <summary>
 /// Sprite Definition.
 /// </summary>
@@ -37,16 +32,7 @@ public class tk2dSpriteDefinition
 		/// </summary>
 		Mesh,
 	}
-
-	/// <summary>
-	/// Physics engine.
-	/// </summary>
-	public enum PhysicsEngine
-	{
-		Physics3D,
-		Physics2D
-	}
-
+	
 	/// <summary>
 	/// Name
 	/// </summary>
@@ -85,10 +71,6 @@ public class tk2dSpriteDefinition
 	/// true when multi-atlas spanning is enabled.
 	/// </summary>
 	public Material material;
-
-	[System.NonSerialized]
-	public Material materialInst;
-
 	/// <summary>
 	/// The material id used by this sprite. This is an index into the materials array and corresponds to the 
 	/// material flag above.
@@ -106,16 +88,10 @@ public class tk2dSpriteDefinition
 	public bool extractRegion;
 	public int regionX, regionY, regionW, regionH;
 	
-	public enum FlipMode {
-		None,
-		Tk2d,
-		TPackerCW,
-	}
-
 	/// <summary>
 	/// Specifies if this texture is flipped to its side (rotated) in the atlas
 	/// </summary>
-	public FlipMode flipped;
+	public bool flipped;
 	
 	/// <summary>
 	/// Specifies if this texture has complex geometry
@@ -123,14 +99,9 @@ public class tk2dSpriteDefinition
 	public bool complexGeometry = false;
 	
 	/// <summary>
-	/// Physics engine
-	/// </summary>
-	public PhysicsEngine physicsEngine = PhysicsEngine.Physics3D;
-	
-	/// <summary>
 	/// Collider type
 	/// </summary>
-	public ColliderType colliderType = ColliderType.Unset;
+	public ColliderType colliderType = ColliderType.None;
 	
 	/// <summary>
 	/// v0 and v1 are center and size respectively for box colliders when colliderType is Box.
@@ -141,54 +112,8 @@ public class tk2dSpriteDefinition
 	public int[] colliderIndicesBack;
 	public bool colliderConvex;
 	public bool colliderSmoothSphereCollisions;
-	public tk2dCollider2DData[] polygonCollider2D = new tk2dCollider2DData[0];
-	public tk2dCollider2DData[] edgeCollider2D = new tk2dCollider2DData[0];
-
-	[System.Serializable]
-	public class AttachPoint
-	{
-		public string name = "";
-		public Vector3 position = Vector3.zero;
-		public float angle = 0;
-
-		public void CopyFrom( AttachPoint src ) {
-			name = src.name;
-			position = src.position;
-			angle = src.angle;
-		}
-
-		public bool CompareTo( AttachPoint src ) {
-			return (name == src.name && src.position == position && src.angle == angle);
-		}
-	}
-
-	public AttachPoint[] attachPoints = new AttachPoint[0];
 	
 	public bool Valid { get { return name.Length != 0; } }
-
-	/// <summary>
-	/// Gets the trimmed bounds of the sprite.
-	/// </summary>
-	/// <returns>
-	/// Local space bounds
-	/// </returns>
-	public Bounds GetBounds()
-	{
-		return new Bounds(new Vector3(boundsData[0].x, boundsData[0].y, boundsData[0].z),
-		                  new Vector3(boundsData[1].x, boundsData[1].y, boundsData[1].z));
-	}
-	
-	/// <summary>
-	/// Gets untrimmed bounds of the sprite.
-	/// </summary>
-	/// <returns>
-	/// Local space untrimmed bounds
-	/// </returns>
-	public Bounds GetUntrimmedBounds()
-	{
-		return new Bounds(new Vector3(untrimmedBoundsData[0].x, untrimmedBoundsData[0].y, untrimmedBoundsData[0].z),
-		                  new Vector3(untrimmedBoundsData[1].x, untrimmedBoundsData[1].y, untrimmedBoundsData[1].z));
-	}
 }
 
 [AddComponentMenu("2D Toolkit/Backend/tk2dSpriteCollectionData")]
@@ -199,11 +124,11 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 {
 	public const int CURRENT_VERSION = 3;
 	
+	[HideInInspector]
 	public int version;
 	public bool materialIdsValid = false;
-	public bool needMaterialInstance = false;
-	public bool Transient { get; set; } // this should not get serialized
-
+	
+    [HideInInspector]
 	/// <summary>
 	/// An array of sprite definitions.
 	/// </summary>
@@ -217,75 +142,59 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	/// <summary>
 	/// Whether premultiplied alpha is enabled on this sprite collection. This affects how tint colors are computed.
 	/// </summary>
+    [HideInInspector]
     public bool premultipliedAlpha;
 	
 	/// <summary>
 	/// Only exists for backwards compatibility. Do not use or rely on this.
 	/// </summary>
+    [HideInInspector]
 	public Material material;	
 	
 	/// <summary>
 	/// An array of all materials used by this sprite collection.
 	/// </summary>
 	public Material[] materials;
-
-	[System.NonSerialized]
-	public Material[] materialInsts;
-
-	Texture2D[] textureInsts = new Texture2D[0];
-
-
+	
 	/// <summary>
 	/// An array of all textures used by this sprite collection.
 	/// </summary>
 	public Texture[] textures;
-
-	/// <summary>
-	/// An array of PNG textures used by this sprite collection.
-	/// </summary>
-	public TextAsset[] pngTextures = new TextAsset[0];
-
-	// Used only for PNG textures
-	public FilterMode textureFilterMode = FilterMode.Bilinear;
-	public bool textureMipMaps = false;
 	
 	/// <summary>
 	/// Specifies if sprites span multiple atlases.
 	/// </summary>
+	[HideInInspector]
 	public bool allowMultipleAtlases;
 	
 	/// <summary>
 	/// The sprite collection GUI.
 	/// </summary>
+	[HideInInspector]
 	public string spriteCollectionGUID;
 	
+	[HideInInspector]
 	/// <summary>
 	/// The name of the sprite collection.
 	/// </summary>
 	public string spriteCollectionName;
-
-	/// <summary>
-	/// Asset Name, used to load the asset
-	/// </summary>
-	public string assetName = "";	
 	
-	/// <summary>
-	/// Is this asset loadable using tk2dSystem
-	/// </summary>
-	public bool loadable = false;
-	
+	[HideInInspector]
 	/// <summary>
 	/// The size of the inv ortho size used to generate the sprite collection.
 	/// </summary>
 	public float invOrthoSize = 1.0f;
 	
+	[HideInInspector]
 	/// <summary>
 	/// Target height used to generate the sprite collection.
 	/// </summary>
 	public float halfTargetHeight = 1.0f;
 	
+	[HideInInspector]
 	public int buildKey = 0;
 	
+	[HideInInspector]
 	/// <summary>
 	/// GUID of this object, used with <see cref="tk2dIndex"/>
 	/// </summary>
@@ -294,29 +203,7 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	/// <summary>
 	/// Returns the number of sprite definitions in this sprite collection.
 	/// </summary>
-    public int Count { get { return inst.spriteDefinitions.Length; } }
-
-	/// <summary>
-	/// When true, sprite collection will not be directly selectable
-	/// </summary>
-    public bool managedSpriteCollection = false;
-
-	/// <summary>
-	/// When true, spriteCollectionPlatforms & PlatformGUIDs are expected to have
-	/// sensible data.
-	/// </summary>
-	public bool hasPlatformData = false;
-
-	/// <summary>
-	/// Returns an array of platform names.
-	/// </summary>
-    public string[] spriteCollectionPlatforms = null;
-
-	/// <summary>
-	/// Returns an array of GUIDs, each referring to an actual tk2dSpriteCollectionData object
-	/// This object contains the actual sprite collection for the platform.
-	/// </summary>
-    public string[] spriteCollectionPlatformGUIDs = null;
+    public int Count { get { return spriteDefinitions.Length; } }
 
 	/// <summary>
 	/// Resolves a sprite name and returns a unique id for the sprite.
@@ -327,40 +214,10 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	/// <param name='name'>Case sensitive sprite name, as defined in the sprite collection. This is usually the source filename excluding the extension</param>
 	public int GetSpriteIdByName(string name)
 	{
-		return GetSpriteIdByName(name, 0);
-	}
-	
-	/// <summary>
-	/// Resolves a sprite name and returns a unique id for the sprite.
-	/// </summary>
-	/// <returns>
-	/// Unique Sprite Id. defaultValue if sprite isn't found.
-	/// </returns>
-	/// <param name='name'>Case sensitive sprite name, as defined in the sprite collection. This is usually the source filename excluding the extension</param>
-	/// <param name='defaultValue'>The value which is returned when the named sprite can't be found.</param>
-	public int GetSpriteIdByName(string name, int defaultValue)
-	{
-		inst.InitDictionary();
-		int returnValue = defaultValue;
-		if (!inst.spriteNameLookupDict.TryGetValue(name, out returnValue)) return defaultValue;
+		InitDictionary();
+		int returnValue = 0;
+		spriteNameLookupDict.TryGetValue(name, out returnValue);
 		return returnValue; // default to first sprite
-	}
-
-	/// <summary>
-	/// Resolves a sprite name and returns a reference to a sprite definition
-	/// </summary>
-	/// <returns>
-	/// Unique Sprite Definition. null if sprite isn't found.
-	/// </returns>
-	/// <param name='name'>Case sensitive sprite name, as defined in the sprite collection. This is usually the source filename excluding the extension</param>
-	public tk2dSpriteDefinition GetSpriteDefinition(string name) {
-		int id = GetSpriteIdByName(name, -1);
-		if (id == -1) {
-			return null;
-		}
-		else {
-			return spriteDefinitions[id];
-		}
 	}
 	
 	/// <summary>
@@ -385,23 +242,13 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	{
 		get 
 		{
-			foreach (var v in inst.spriteDefinitions)
+			foreach (var v in spriteDefinitions)
 			{
 				if (v.Valid)
 					return v;
 			}
 			return null;
 		}
-	}
-
-	/// <summary>
-	/// Returns true if the sprite id is valid for this sprite collection
-	/// </summary>
-	public bool IsValidSpriteId(int id) {
-		if (id < 0 || id >= inst.spriteDefinitions.Length) {
-			return false;
-		}
-		return inst.spriteDefinitions[id].Valid;
 	}
 	
 	/// <summary>
@@ -411,10 +258,8 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	{
 		get 
 		{
-			tk2dSpriteCollectionData data = inst;
-
-			for (int i = 0; i < data.spriteDefinitions.Length; ++i)
-				if (data.spriteDefinitions[i].Valid)
+			for (int i = 0; i < spriteDefinitions.Length; ++i)
+				if (spriteDefinitions[i].Valid)
 					return i;
 			return -1;
 		}
@@ -425,14 +270,14 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 	/// </summary>
 	public void InitMaterialIds()
 	{
-		if (inst.materialIdsValid)
+		if (materialIdsValid)
 			return;
 		
 		int firstValidIndex = -1;
 		Dictionary<Material, int> materialLookupDict = new Dictionary<Material, int>();
-		for (int i = 0; i < inst.materials.Length; ++i)
+		for (int i = 0; i < materials.Length; ++i)
 		{
-			if (firstValidIndex == -1 && inst.materials[i] != null)
+			if (firstValidIndex == -1 && materials[i] != null)
 				firstValidIndex = i;
 			materialLookupDict[materials[i]] = i;
 		}
@@ -442,206 +287,12 @@ public class tk2dSpriteCollectionData : MonoBehaviour
 		}
 		else
 		{
-			foreach (var v in inst.spriteDefinitions)			
+			foreach (var v in spriteDefinitions)			
 			{
 				if (!materialLookupDict.TryGetValue(v.material, out v.materialId))
 					v.materialId = firstValidIndex;
 			}
-			inst.materialIdsValid = true;
+			materialIdsValid = true;
 		}
-	}
-
-	tk2dSpriteCollectionData platformSpecificData = null;
-
-	// Returns the active instance
-	public tk2dSpriteCollectionData inst
-	{
-		get 
-		{
-			if (platformSpecificData == null)
-			{
-				if (hasPlatformData)
-				{
-					string systemPlatform = tk2dSystem.CurrentPlatform;
-					string guid = "";
-
-					for (int i = 0; i < spriteCollectionPlatforms.Length; ++i)
-					{
-						if (spriteCollectionPlatforms[i] == systemPlatform)
-						{
-							guid = spriteCollectionPlatformGUIDs[i];
-							break;							
-						}
-					}
-					if (guid.Length == 0)
-						guid = spriteCollectionPlatformGUIDs[0]; // failed to find platform, pick the first one
-
-					platformSpecificData = tk2dSystem.LoadResourceByGUID<tk2dSpriteCollectionData>(guid);
-				}
-				else
-				{
-					platformSpecificData = this;
-				}
-			}
-			platformSpecificData.Init(); // awake is never called, so we initialize explicitly
-			return platformSpecificData;
-		}
-	}
-	
-	void Init()
-	{
-		// check if already initialized
-		if (materialInsts != null)
-			return;
-
-		if (spriteDefinitions == null) spriteDefinitions = new tk2dSpriteDefinition[0];
-		if (materials == null) materials = new Material[0];
-
-		materialInsts = new Material[materials.Length];
-		if (needMaterialInstance)
-		{
-			if (tk2dSystem.OverrideBuildMaterial) {
-				// This is a hack to work around a bug in Unity 4.x
-				// Scene serialization will serialize the actively bound texture
-				// but not the material during the build, only when [ExecuteInEditMode]
-				// is on, eg. on sprites.
-				for (int i = 0; i < materials.Length; ++i)
-				{
-					materialInsts[i] = new Material(Shader.Find("tk2d/BlendVertexColor"));
-	#if UNITY_EDITOR
-					materialInsts[i].hideFlags = HideFlags.DontSave;
-	#endif
-				}
-			}
-			else {
-				bool assignTextureInst = false;
-				if (pngTextures.Length > 0) {
-					assignTextureInst = true;
-					textureInsts = new Texture2D[pngTextures.Length];
-					for (int i = 0; i < pngTextures.Length; ++i) {
-						Texture2D tex = new Texture2D(4, 4, TextureFormat.ARGB32, textureMipMaps);
-						tex.LoadImage(pngTextures[i].bytes);
-						textureInsts[i] = tex;
-						tex.filterMode = textureFilterMode;
-	#if UNITY_EDITOR
-						tex.hideFlags = HideFlags.DontSave;
-	#endif
-					}
-				}
-
-				for (int i = 0; i < materials.Length; ++i)
-				{
-					materialInsts[i] = Instantiate(materials[i]) as Material;
-	#if UNITY_EDITOR
-					materialInsts[i].hideFlags = HideFlags.DontSave;
-	#endif
-					if (assignTextureInst) {
-						materialInsts[i].mainTexture = textureInsts[i];
-					}
-				}
-			}
-			for (int i = 0; i < spriteDefinitions.Length; ++i)
-			{
-				tk2dSpriteDefinition def = spriteDefinitions[i];
-				def.materialInst = materialInsts[def.materialId];
-			}
-		}
-		else
-		{
-			for (int i = 0; i < materials.Length; ++i) {
-				materialInsts[i] = materials[i];
-			}
-			for (int i = 0; i < spriteDefinitions.Length; ++i)
-			{
-				tk2dSpriteDefinition def = spriteDefinitions[i];
-				def.materialInst = def.material;
-			}
-		}
-	}
-
-	/// <summary>
-	/// Create a sprite collection at runtime from a texture and user specified regions.
-	/// Please ensure that names, regions & anchor arrays have same dimension.
-	/// Use <see cref="tk2dBaseSprite.CreateFromTexture"/> if you need to create only one sprite from a texture.
-	/// </summary>
-	public static tk2dSpriteCollectionData CreateFromTexture(Texture texture, tk2dSpriteCollectionSize size, string[] names, Rect[] regions, Vector2[] anchors)
-	{
-		return tk2dRuntime.SpriteCollectionGenerator.CreateFromTexture(texture, size, names, regions, anchors);
-	}
-
-	/// <summary>
-	/// Create a sprite collection at runtime from a texturepacker exported file.
-	/// Ensure this is exported using the "2D Toolkit" export mode in TexturePacker. 
-	/// You can find this exporter in Assets/TK2DROOT/tk2d/Goodies/TexturePacker/Exporter
-	/// You can use also use this to load sprite collections at runtime.
-	/// </summary>
-	public static tk2dSpriteCollectionData CreateFromTexturePacker(tk2dSpriteCollectionSize size, string texturePackerData, Texture texture)
-	{
-		return tk2dRuntime.SpriteCollectionGenerator.CreateFromTexturePacker(size, texturePackerData, texture);
-	}
-
-	public void ResetPlatformData()
-	{
-		if (platformSpecificData != null) {
-			platformSpecificData.DestroyTextureInsts();
-		}
-		DestroyTextureInsts();
-
-		if (platformSpecificData)
-		{
-			platformSpecificData = null;
-		}
-		
-		materialInsts = null;
-	}
-
-	void DestroyTextureInsts() {
-		foreach (Texture2D texture in textureInsts) {
-			Object.DestroyImmediate(texture);
-		}
-		textureInsts = new Texture2D[0];
-	}
-
-	/// <summary>
-	/// Unloads the atlas texture data in this sprite collection.
-	/// This will be reloaded when the data is accessed again.
-	/// Make sure all sprites using this collection have already been destroyed.
-	/// </summary>
-	public void UnloadTextures() {
-		// Debug.Log(Resources.FindObjectsOfTypeAll(typeof(Texture2D)).Length);
-
-		tk2dSpriteCollectionData theInst = inst;
-		foreach (Texture2D texture in theInst.textures) {
-			Resources.UnloadAsset(texture);
-		}
-
-		theInst.DestroyTextureInsts();
-
-		// Debug.Log(Resources.FindObjectsOfTypeAll(typeof(Texture2D)).Length);
-	}
-
-	void OnDestroy()
-	{
-		if (Transient)
-		{
-			foreach (Material material in materials)
-			{
-				DestroyImmediate(material);
-			}
-		}
-		else if (needMaterialInstance) // exclusive
-		{
-			foreach (Material material in materialInsts) {
-				DestroyImmediate(material);
-			}
-			materialInsts = new Material[0];
-
-			foreach (Texture2D texture in textureInsts) {
-				Object.DestroyImmediate(texture);
-			}
-			textureInsts = new Texture2D[0];
-		}
-
-		ResetPlatformData();
 	}
 }

@@ -32,7 +32,6 @@ namespace tk2dEditor.Atlas
 		int atlasHeight = 0;
 		bool forceSquare = false;
 		bool allowOptimizeSize = true;
-		int alignShift = 0;
 		
 		List<RectSize> sourceRects = new List<RectSize>();
 
@@ -113,18 +112,14 @@ namespace tk2dEditor.Atlas
 			atlases = new List<Data>();
 			remainingRectIndices = new List<int>();
 			bool[] usedRect = new bool[sourceRects.Count];
-
-			int atlasWidth = this.atlasWidth >> alignShift;
-			int atlasHeight = this.atlasHeight >> alignShift;
 			
 			// Sanity check, can't build with textures larger than the actual max atlas size
-			int align = (1 << alignShift) - 1;
 			int minSize = Math.Min(atlasWidth, atlasHeight);
 			int maxSize = Math.Max(atlasWidth, atlasHeight);
 			foreach (RectSize rs in sourceRects)
 			{
-				int maxDim = (Math.Max(rs.width, rs.height) + align) >> alignShift;
-				int minDim = (Math.Min(rs.width, rs.height) + align) >> alignShift;
+				int maxDim = Math.Max(rs.width, rs.height);
+				int minDim = Math.Min(rs.width, rs.height);
 				
 				// largest texture needs to fit in an atlas
 				if (maxDim > maxSize || (maxDim <= maxSize && minDim > minSize))
@@ -137,15 +132,7 @@ namespace tk2dEditor.Atlas
 			}
 			
 			// Start with all source rects, this list will get reduced over time
-			List<RectSize> rects = new List<RectSize>();
-			foreach (RectSize rs in sourceRects)
-			{
-				RectSize t = new RectSize();
-				t.width = (rs.width + align) >> alignShift;
-				t.height = (rs.height + align) >> alignShift;
-				rects.Add(t);
-			}
-
+			List<RectSize> rects = new List<RectSize>(sourceRects);
 			bool allUsed = false;
 			while (allUsed == false && atlases.Count < maxAllowedAtlasCount)
 			{
@@ -177,20 +164,13 @@ namespace tk2dEditor.Atlas
 						
 						foreach (var t in binPacker.GetMapped())
 						{
-							int matchedWidth = 0;
-							int matchedHeight = 0;
-
 							int matchedId = -1;
 							bool flipped = false;
 							for (int i = 0; i < sourceRects.Count; ++i)
 							{
-								int width = (sourceRects[i].width + align) >> alignShift;
-								int height = (sourceRects[i].height + align) >> alignShift;
-								if (!usedRect[i] && width == t.width && height == t.height)
+								if (!usedRect[i] && sourceRects[i].width == t.width && sourceRects[i].height == t.height)
 								{
 									matchedId = i;
-									matchedWidth = sourceRects[i].width;
-									matchedHeight = sourceRects[i].height;
 									break;
 								}
 							}
@@ -200,14 +180,10 @@ namespace tk2dEditor.Atlas
 							{
 								for (int i = 0; i < sourceRects.Count; ++i)
 								{
-									int width = (sourceRects[i].width + align) >> alignShift;
-									int height = (sourceRects[i].height + align) >> alignShift;
-									if (!usedRect[i] && width == t.height && height == t.width)
+									if (!usedRect[i] && sourceRects[i].width == t.height && sourceRects[i].height == t.width)
 									{
 										matchedId = i;
 										flipped = true;
-										matchedWidth = sourceRects[i].height;
-										matchedHeight = sourceRects[i].width;
 										break;
 									}
 								}
@@ -217,17 +193,17 @@ namespace tk2dEditor.Atlas
 							usedRect[matchedId] = true;
 							Entry newEntry = new Entry();
 							newEntry.flipped = flipped;
-							newEntry.x = t.x << alignShift;
-							newEntry.y = t.y << alignShift;
-							newEntry.w = matchedWidth;
-							newEntry.h = matchedHeight;
+							newEntry.x = t.x;
+							newEntry.y = t.y;
+							newEntry.w = t.width;
+							newEntry.h = t.height;
 							newEntry.index = matchedId;
 							atlasEntries.Add(newEntry);
 						}
 
 						Data currAtlas = new Data();
-						currAtlas.width = thisCellW << alignShift;
-						currAtlas.height = thisCellH << alignShift;
+						currAtlas.width = thisCellW;
+						currAtlas.height = thisCellH;
 						currAtlas.occupancy = binPacker.Occupancy();
 						currAtlas.entries = atlasEntries.ToArray();
 						
