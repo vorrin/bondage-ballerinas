@@ -70,62 +70,31 @@ namespace tk2dRuntime.TileMap
 			
 			return dataChanged;
 		}		
-		
-		/// Deletes all generated instances
-		public static void CleanRenderData(tk2dTileMap tileMap)
-		{
-			if (tileMap.renderData == null)
-				return;
-			
-			// Build a list of all children
-			// All children will appear after the parent
-			int currentProcessedChild = 0;
-			List<Transform> children = new List<Transform>();
-			children.Add(tileMap.renderData.transform);
-			while (currentProcessedChild < children.Count)
-			{
-				var thisChild = children[currentProcessedChild++];
-				int childCount = thisChild.GetChildCount();
-				for (int i = 0; i < childCount; ++i)
-					children.Add(thisChild.GetChild(i));
-			}
-			currentProcessedChild = children.Count - 1;
-			while (currentProcessedChild > 0) // skip very first as it is the root object
-			{
-				var go = children[currentProcessedChild--].gameObject;
-				
-				MeshFilter mf = go.GetComponent<MeshFilter>();
-				if (mf != null)
-				{
-					Mesh mesh = mf.sharedMesh;
-					mf.sharedMesh = null;
-					
-					tileMap.DestroyMesh(mesh);
-				}
 
-				MeshCollider meshCollider = go.GetComponent<MeshCollider>();
-				if (meshCollider)
-				{
-					Mesh mesh = meshCollider.sharedMesh;
-					meshCollider.sharedMesh = null;
-					
-					tileMap.DestroyMesh(mesh);
-				}
-				
-				GameObject.DestroyImmediate(go);
+		static List<int> TilePrefabsX;
+		static List<int> TilePrefabsY;
+		static List<int> TilePrefabsLayer;
+		static List<GameObject> TilePrefabsInstance;
+
+		static GameObject GetExistingTilePrefabInstance(tk2dTileMap tileMap, int tileX, int tileY, int tileLayer) {
+			int n = tileMap.GetTilePrefabsListCount();
+			for (int i = 0; i < n; ++i) {
+				int x, y, layer;
+				GameObject instance;
+				tileMap.GetTilePrefabsListItem(i, out x, out y, out layer, out instance);
+				if (x == tileX && y == tileY && layer == tileLayer)
+					return instance;
 			}
-			
-			tileMap.buildKey++; // force a rebuild
+			return null;
 		}
 		
 		/// Spawns all prefabs for a given chunk
 		/// Expects the chunk to have a valid GameObject
-		public static void SpawnPrefabsForChunk(tk2dTileMap tileMap, SpriteChunk chunk, int baseX, int baseY)
+		public static void SpawnPrefabsForChunk(tk2dTileMap tileMap, SpriteChunk chunk, int baseX, int baseY, int layer, int[] prefabCounts)
 		{
 			var chunkData = chunk.spriteIds;
 			var tilePrefabs = tileMap.data.tilePrefabs;
 			Vector3 tileSize = tileMap.data.tileSize;
-			int[] prefabCounts = new int[tilePrefabs.Length];
 			var parent = chunk.gameObject.transform;
 			
 			float xOffsetMult = 0.0f, yOffsetMult = 0.0f;
@@ -136,30 +105,62 @@ namespace tk2dRuntime.TileMap
 				float xOffset = ((baseY + y) & 1) * xOffsetMult;
 				for (int x = 0; x < tileMap.partitionSizeX; ++x)
 				{
-					int tile = chunkData[y * tileMap.partitionSizeX + x];
+					int tile = GetTileFromRawTile(chunkData[y * tileMap.partitionSizeX + x]);
 					if (tile < 0 || tile >= tilePrefabs.Length)
 						continue;
-					
-					Vector3 currentPos = new Vector3(tileSize.x * (x + xOffset), tileSize.y * y, 0);
-					
+
 					Object prefab = tilePrefabs[tile];
 					if (prefab != null)
 					{
 						prefabCounts[tile]++;
+
+						GameObject instance = GetExistingTilePrefabInstance(tileMap, baseX + x, baseY + y, layer);
+						bool foundExisting = (instance != null);
+
+					#if UNITY_EDITOR
+						if (instance != null) {
+							if (UnityEditor.PrefabUtility.GetPrefabParent(instance) != prefab) {
+								instance = null;
+							}
+						}
+					#endif
+
+						if (instance == null) {
+					#if UNITY_EDITOR
+							instance = UnityEditor.PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+					#else
+							instance = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity) as GameObject;
+					#endif
+
+					#if UNITY_EDITOR && !(UNITY_3_5 || UNITY_4_0 || UNITY_4_0_1 || UNITY_4_1 || UNITY_4_2)
+							if (!Application.isPlaying) {
+								UnityEditor.Undo.RegisterCreatedObjectUndo(instance, "Instantiated Prefab");
+							}
+					#endif
+						}
 						
-#if UNITY_EDITOR && !(UNITY_3_0 || UNITY_3_1 || UNITY_3_2 || UNITY_3_3 || UNITY_3_4)
-						GameObject go = UnityEditor.PrefabUtility.InstantiatePrefab(prefab) as GameObject;
-#else
-						GameObject go = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity) as GameObject;
-#endif
-						if (go)
-						{
-							go.name = prefab.name + " " + prefabCounts[tile].ToString();
-							// Position after transforming, as it is in local space
-							go.transform.parent = parent;
-							go.transform.localPosition = currentPos;
-							go.transform.localRotation = Quaternion.identity;
-							go.transform.localScale = Vector3.one;
+						if (instance != null) {
+							GameObject prefabGameObject = prefab as GameObject;
+
+							Vector3 pos = new Vector3(tileSize.x * (x + xOffset), tileSize.y * y, 0);
+							bool enablePrefabOffset = false;
+							var tileInfo = tileMap.data.GetTileInfoForSprite(tile);
+							if (tileInfo != null)
+								enablePrefabOffset = tileInfo.enablePrefabOffset;
+							if (enablePrefabOffset && prefabGameObject != null)
+								pos += prefabGameObject.transform.position;
+
+							if (!foundExisting)
+								instance.name = prefab.name + " " + prefabCounts[tile].ToString();
+
+							tk2dUtil.SetTransformParent(instance.transform, parent);
+							instance.transform.localPosition = pos;
+
+							// Add to tilePrefabs list
+							TilePrefabsX.Add(baseX + x);
+							TilePrefabsY.Add(baseY + y);
+							TilePrefabsLayer.Add(layer);
+							TilePrefabsInstance.Add(instance);
 						}
 					}
 				}
@@ -168,15 +169,26 @@ namespace tk2dRuntime.TileMap
 		
 		/// Spawns all prefabs for a given tilemap
 		/// Expects populated chunks to have valid GameObjects
-		public static void SpawnPrefabs(tk2dTileMap tileMap)
+		public static void SpawnPrefabs(tk2dTileMap tileMap, bool forceBuild) 
 		{
+			// Restart these lists that will be stored in the tileMap tilePrefabsList
+			TilePrefabsX = new List<int>();
+			TilePrefabsY = new List<int>();
+			TilePrefabsLayer = new List<int>();
+			TilePrefabsInstance = new List<GameObject>();
+
+			int[] prefabCounts = new int[tileMap.data.tilePrefabs.Length];
+
 			int numLayers = tileMap.Layers.Length;
 			for (int layerId = 0; layerId < numLayers; ++layerId)
 			{
 				var layer = tileMap.Layers[layerId];
-				if (layer.IsEmpty || tileMap.data.Layers[layerId].skipMeshGeneration)
+				var layerData = tileMap.data.Layers[layerId];
+
+				// We skip offsetting the first one
+				if (layer.IsEmpty || layerData.skipMeshGeneration)
 					continue;
-				
+
 				for (int cellY = 0; cellY < layer.numRows; ++cellY)
 				{
 					int baseY = cellY * layer.divY;
@@ -186,11 +198,90 @@ namespace tk2dRuntime.TileMap
 						var chunk = layer.GetChunk(cellX, cellY);
 						if (chunk.IsEmpty)
 							continue;
+						if (!forceBuild && !chunk.Dirty)
+							continue;
 						
-						SpawnPrefabsForChunk(tileMap, chunk, baseX, baseY);
+						SpawnPrefabsForChunk(tileMap, chunk, baseX, baseY, layerId, prefabCounts);
 					}
 				}
 			}
+
+			tileMap.SetTilePrefabsList(TilePrefabsX, TilePrefabsY, TilePrefabsLayer, TilePrefabsInstance);
+		}
+
+		/// <summary>
+		/// Moves the chunk's gameobject's children to the prefab root
+		/// </summary>
+		public static void HideTileMapPrefabs(tk2dTileMap tileMap) {
+			if (tileMap.renderData == null || tileMap.Layers == null) {
+				// No Render Data to parent Prefab Root to
+				return;
+			}
+
+			if (tileMap.PrefabsRoot == null) {
+				var go = tileMap.PrefabsRoot = tk2dUtil.CreateGameObject("Prefabs");
+				go.transform.parent = tileMap.renderData.transform;
+				go.transform.localPosition = Vector3.zero;
+				go.transform.localRotation = Quaternion.identity;
+				go.transform.localScale = Vector3.one;
+			}
+
+			int instListCount = tileMap.GetTilePrefabsListCount();
+			bool[] instExists = new bool[instListCount];
+
+			for (int i = 0; i < tileMap.Layers.Length; ++i) {
+				var layer = tileMap.Layers[i];
+				for (int j = 0; j < layer.spriteChannel.chunks.Length; ++j) {
+					var chunk = layer.spriteChannel.chunks[j];
+					if (chunk.gameObject == null)
+						continue;
+
+					var t = chunk.gameObject.transform;
+					int childCount = t.childCount;
+					for (int k = 0; k < childCount; ++k) {
+						GameObject go = t.GetChild(k).gameObject;
+						for (int q = 0; q < instListCount; ++q) {
+							int x, y, layerIdx;
+							GameObject instance;
+							tileMap.GetTilePrefabsListItem(q, out x, out y, out layerIdx, out instance);
+							if (instance == go) {
+								instExists[q] = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			Object[] prefabs = tileMap.data.tilePrefabs;
+			List<int> tileX = new List<int>();
+			List<int> tileY = new List<int>();
+			List<int> tileLayer = new List<int>();
+			List<GameObject> tileInst = new List<GameObject>();
+			for (int i = 0; i < instListCount; ++i) {
+				int x, y, layerIdx;
+				GameObject instance;
+				tileMap.GetTilePrefabsListItem(i, out x, out y, out layerIdx, out instance);
+				
+				// Is it already IN the list for some reason?
+				if (!instExists[i]) {
+					int tileId = (x >= 0 && x < tileMap.width && y >= 0 && y < tileMap.height) ? tileMap.GetTile(x, y, layerIdx) : -1;
+					if (tileId >= 0 && tileId < prefabs.Length && prefabs[tileId] != null) {
+						instExists[i] = true;
+					}
+				}
+				
+				if (instExists[i]) {
+					tileX.Add(x);
+					tileY.Add(y);
+					tileLayer.Add(layerIdx);
+					tileInst.Add(instance);
+
+					tk2dUtil.SetTransformParent(instance.transform, tileMap.PrefabsRoot.transform);
+				}
+			}
+			
+			tileMap.SetTilePrefabsList(tileX, tileY, tileLayer, tileInst);
 		}
 		
 		static Vector3 GetTilePosition(tk2dTileMap tileMap, int x, int y)
@@ -199,11 +290,11 @@ namespace tk2dRuntime.TileMap
 		}
 
 		/// Creates render data for given tilemap
-		public static void CreateRenderData(tk2dTileMap tileMap, bool editMode)
+		public static void CreateRenderData(tk2dTileMap tileMap, bool editMode, Dictionary<Layer, bool> layersActive)
 		{
 			// Create render data
 			if (tileMap.renderData == null)
-				tileMap.renderData = new GameObject(tileMap.name + " Render Data");
+				tileMap.renderData = tk2dUtil.CreateGameObject(tileMap.name + " Render Data");
 	
 			tileMap.renderData.transform.position = tileMap.transform.position;
 			
@@ -214,17 +305,18 @@ namespace tk2dRuntime.TileMap
 			foreach (var layer in tileMap.Layers)
 			{
 				// We skip offsetting the first one
+				float layerInfoZ = tileMap.data.Layers[layerId].z;
 				if (layerId != 0)
-					accumulatedLayerZ -= tileMap.data.Layers[layerId].z;
+					accumulatedLayerZ -= layerInfoZ;
 				
 				if (layer.IsEmpty && layer.gameObject != null)
 				{
-					GameObject.DestroyImmediate(layer.gameObject);
+					tk2dUtil.DestroyImmediate(layer.gameObject);
 					layer.gameObject = null;
 				}
 				else if (!layer.IsEmpty && layer.gameObject == null)
 				{
-					var go = layer.gameObject = new GameObject("");
+					var go = layer.gameObject = tk2dUtil.CreateGameObject("");
 					go.transform.parent = tileMap.renderData.transform;
 				}
 				
@@ -232,11 +324,16 @@ namespace tk2dRuntime.TileMap
 				
 				if (layer.gameObject != null)
 				{
-					if (!editMode && layer.gameObject.active == false)
-						layer.gameObject.SetActiveRecursively(true);
+#if UNITY_3_5
+					if (!editMode &&  layersActive.ContainsKey(layer) && layer.gameObject.active != layersActive[layer])
+						layer.gameObject.SetActiveRecursively(layersActive[layer]);
+#else
+					if (!editMode && layersActive.ContainsKey(layer) && layer.gameObject.activeSelf != layersActive[layer])
+						layer.gameObject.SetActive(layersActive[layer]);
+#endif
 					
 					layer.gameObject.name = tileMap.data.Layers[layerId].name;
-					layer.gameObject.transform.localPosition = new Vector3(0, 0, accumulatedLayerZ);
+					layer.gameObject.transform.localPosition = new Vector3(0, 0, tileMap.data.layersFixedZ ? (-layerInfoZ) : accumulatedLayerZ);
 					layer.gameObject.transform.localRotation = Quaternion.identity;
 					layer.gameObject.transform.localScale = Vector3.one;
 					layer.gameObject.layer = unityLayer;
@@ -256,6 +353,9 @@ namespace tk2dRuntime.TileMap
 					{
 						var chunk = layer.GetChunk(x, y);
 						bool isEmpty = layer.IsEmpty || chunk.IsEmpty;
+						if (editMode) {
+							isEmpty = false;
+						}
 						
 						if (isEmpty && chunk.HasGameData)
 						{
@@ -264,19 +364,14 @@ namespace tk2dRuntime.TileMap
 						else if (!isEmpty && chunk.gameObject == null)
 						{
 							string chunkName = "Chunk " + y.ToString() + " " + x.ToString();
-							var go = chunk.gameObject = new GameObject(chunkName);
+							var go = chunk.gameObject = tk2dUtil.CreateGameObject(chunkName);
 							go.transform.parent = layer.gameObject.transform;
 							
 							// render mesh
-							MeshFilter meshFilter = go.AddComponent<MeshFilter>();
-							go.AddComponent<MeshRenderer>();
-							chunk.mesh = tileMap.GetOrCreateMesh();
+							MeshFilter meshFilter = tk2dUtil.AddComponent<MeshFilter>(go);
+							tk2dUtil.AddComponent<MeshRenderer>(go);
+							chunk.mesh = tk2dUtil.CreateMesh();
 							meshFilter.mesh = chunk.mesh;
-							
-							// collider mesh
-							chunk.meshCollider = go.AddComponent<MeshCollider>();
-							chunk.meshCollider.sharedMesh = null;
-							chunk.colliderMesh = null;
 						}
 						
 						if (chunk.gameObject != null)
@@ -291,8 +386,7 @@ namespace tk2dRuntime.TileMap
 							// We won't be generating collider data in edit mode, so clear everything
 							if (editMode)
 							{
-								if (chunk.colliderMesh)
-									chunk.DestroyColliderData(tileMap);
+								chunk.DestroyColliderData(tileMap);
 							}
 						}
 						
@@ -328,6 +422,63 @@ namespace tk2dRuntime.TileMap
 				Debug.LogError("Unhandled sort method");
 				goto case tk2dTileMapData.SortMethod.BottomLeft;
 			}
+		}
+
+		const int tileMask = 0x00ffffff;
+
+		public static int GetTileFromRawTile(int rawTile) {
+			if (rawTile == -1) return -1;
+			return rawTile & tileMask;
+		}
+
+		public static bool IsRawTileFlagSet(int rawTile, tk2dTileFlags flag) {
+			if (rawTile == -1) return false;
+			return (rawTile & (int)flag) != 0;
+		}
+
+		public static void SetRawTileFlag(ref int rawTile, tk2dTileFlags flag, bool setValue) {
+			if (rawTile == -1) return;
+			rawTile = setValue ? (rawTile | (int)flag) : (rawTile & (int)(~flag));
+		}
+
+		public static void InvertRawTileFlag(ref int rawTile, tk2dTileFlags flag) {
+			if (rawTile == -1) return;
+			bool setValue = (rawTile & (int)flag) == 0;
+			rawTile = setValue ? (rawTile | (int)flag) : (rawTile & (int)(~flag));
+		}
+
+		public static Vector3 ApplySpriteVertexTileFlags(tk2dTileMap tileMap, tk2dSpriteDefinition spriteDef, Vector3 pos, bool flipH, bool flipV, bool rot90) {
+			float cx = tileMap.data.tileOrigin.x + 0.5f * tileMap.data.tileSize.x;
+			float cy = tileMap.data.tileOrigin.y + 0.5f * tileMap.data.tileSize.y;
+			float dx = pos.x - cx;
+			float dy = pos.y - cy;
+			if (rot90) {
+				float tmp = dx;
+				dx = dy;
+				dy = -tmp;
+			}
+			if (flipH) dx *= -1.0f;
+			if (flipV) dy *= -1.0f;
+			pos.x = cx + dx;
+			pos.y = cy + dy;
+			return pos;
+		}
+
+		public static Vector2 ApplySpriteVertexTileFlags(tk2dTileMap tileMap, tk2dSpriteDefinition spriteDef, Vector2 pos, bool flipH, bool flipV, bool rot90) {
+			float cx = tileMap.data.tileOrigin.x + 0.5f * tileMap.data.tileSize.x;
+			float cy = tileMap.data.tileOrigin.y + 0.5f * tileMap.data.tileSize.y;
+			float dx = pos.x - cx;
+			float dy = pos.y - cy;
+			if (rot90) {
+				float tmp = dx;
+				dx = dy;
+				dy = -tmp;
+			}
+			if (flipH) dx *= -1.0f;
+			if (flipV) dy *= -1.0f;
+			pos.x = cx + dx;
+			pos.y = cy + dy;
+			return pos;
 		}
 	}
 }

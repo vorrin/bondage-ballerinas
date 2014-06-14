@@ -9,6 +9,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 		enum CustomMeshType {
 			Default,
 			Diced,
+			DoubleSided,
 			Custom
 		};
 		
@@ -110,7 +111,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 		{
 			var entry = entries[entries.Count - 1];
 			var param = SpriteCollection.textureParams[entry.index];
-			var spriteTexture = param.extractRegion?host.GetTextureForSprite(entry.index):SpriteCollection.textureRefs[entry.index];
+			var spriteTexture = param.extractRegion?host.GetTextureForSprite(entry.index):SpriteCollection.textureParams[entry.index].texture;
 
 			// Inspector
 			EditorGUILayout.BeginVertical();
@@ -144,7 +145,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 				if (param.extractRegion)
 					EditorGUILayout.ObjectField("Texture", spriteTexture, typeof(Texture2D), false);
 				else
-					SpriteCollection.textureRefs[entry.index] = EditorGUILayout.ObjectField("Texture", spriteTexture, typeof(Texture2D), false) as Texture2D;
+					SpriteCollection.textureParams[entry.index].texture = EditorGUILayout.ObjectField("Texture", spriteTexture, typeof(Texture2D), false) as Texture2D;
 				GUILayout.FlexibleSpace();
 				GUILayout.BeginVertical();
 				if (editingSpriteSheet && GUILayout.Button("Edit...", EditorStyles.miniButton, GUILayout.Width(miniButtonWidth))) doSelect = true;
@@ -320,22 +321,28 @@ namespace tk2dEditor.SpriteCollectionEditor
 			CustomMeshType meshType = CustomMeshType.Default;
 			if (param.customSpriteGeometry) meshType = CustomMeshType.Custom;
 			else if (param.dice) meshType = CustomMeshType.Diced;
+			else if (param.doubleSidedSprite) meshType = CustomMeshType.DoubleSided;
 			CustomMeshType newMeshType = (CustomMeshType)EditorGUILayout.EnumPopup("Render Mesh", meshType);
 			if (newMeshType != meshType)
 			{
 				// Fix up
+				param.customSpriteGeometry = false;
+				param.dice = false;
+				param.doubleSidedSprite = false;
+
 				switch (newMeshType)
 				{
-				case CustomMeshType.Custom: param.customSpriteGeometry = true; 	param.dice = false; break;
-				case CustomMeshType.Diced:	param.customSpriteGeometry = false;	param.dice = true;	break;
-				case CustomMeshType.Default:param.customSpriteGeometry = false;	param.dice = false;	break;
+				case CustomMeshType.Custom: param.customSpriteGeometry = true; break;
+				case CustomMeshType.Diced:	param.dice = true;	break;
+				case CustomMeshType.Default: break;
+				case CustomMeshType.DoubleSided: param.doubleSidedSprite = true; break;
 				}
 
 				// Automatically switch to custom geom edit mode when explicitly switched
 				if (param.customSpriteGeometry)
 					textureEditor.SetMode(tk2dEditor.SpriteCollectionEditor.TextureEditor.Mode.Texture);
 			}
-			
+
 			// Sanity check dicing & multiple atlases
 			if (param.dice && SpriteCollection.allowMultipleAtlases)
 			{
@@ -351,17 +358,25 @@ namespace tk2dEditor.SpriteCollectionEditor
 				EditorGUI.indentLevel++;
 				param.diceUnitX = EditorGUILayout.IntField("Dice X", param.diceUnitX);
 				param.diceUnitY = EditorGUILayout.IntField("Dice Y", param.diceUnitY);
+				GUIContent diceFilter = new GUIContent("Dice Filter", 
+					"Dice Filter lets you dice and only store a subset of the dices. This lets you perform more optimizations, drawing solid dices with a solid shader.\n\n"+
+					"Complete - Draw all dices (Default).\nSolidOnly - Only draw the solid dices.\nTransparent Only - Only draw transparent dices.");
+				param.diceFilter = (tk2dSpriteCollectionDefinition.DiceFilter)EditorGUILayout.EnumPopup(diceFilter, param.diceFilter);
 				EditorGUI.indentLevel--;
 				EditorGUILayout.Separator();
 			}
 			
 			HandleMultiSelection(entries, 
-				(a,b) => a.customSpriteGeometry == b.customSpriteGeometry && a.dice == b.dice && a.diceUnitX == b.diceUnitX && a.diceUnitY == b.diceUnitY, 
+				(a,b) => a.customSpriteGeometry == b.customSpriteGeometry && a.dice == b.dice && a.diceUnitX == b.diceUnitX && a.diceUnitY == b.diceUnitY && a.diceFilter == b.diceFilter, 
 				delegate(tk2dSpriteCollectionDefinition a, tk2dSpriteCollectionDefinition b) {
 					b.customSpriteGeometry = a.customSpriteGeometry;
 					b.dice = a.dice;
 					b.diceUnitX = a.diceUnitX;
 					b.diceUnitY = a.diceUnitY;
+					b.diceFilter = a.diceFilter;
+					if (a.customSpriteGeometry) {
+						CopyPolyCollider(a.geometryIslands, ref b.geometryIslands);
+					}
 			});
 			
 
@@ -396,7 +411,6 @@ namespace tk2dEditor.SpriteCollectionEditor
 			{
 				foreach (var e in entries)
 				{
-					SpriteCollection.textureRefs[e.index] = null;
 					SpriteCollection.textureParams[e.index] = new tk2dSpriteCollectionDefinition();
 				}
 				SpriteCollection.Trim();
@@ -440,7 +454,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 				return;
 			var entry = entries[entries.Count - 1];
 			var param = SpriteCollection.textureParams[entry.index];
-			var spriteTexture = param.extractRegion?host.GetTextureForSprite(entry.index):SpriteCollection.textureRefs[entry.index];
+			var spriteTexture = param.extractRegion?host.GetTextureForSprite(entry.index):SpriteCollection.textureParams[entry.index].texture;
 			EditorGUILayout.BeginHorizontal();
 	
 			// Cache texture or draw it
@@ -452,7 +466,7 @@ namespace tk2dEditor.SpriteCollectionEditor
 		
 		public void Draw(List<SpriteCollectionEditorEntry> entries)
 		{
-			EditorGUIUtility.LookLikeControls(110.0f, 100.0f);
+			tk2dGuiUtility.LookLikeControls(110.0f, 100.0f);
 			
 			GUILayout.BeginVertical(GUILayout.ExpandWidth(false));
 			if (entries == null || entries.Count == 0)

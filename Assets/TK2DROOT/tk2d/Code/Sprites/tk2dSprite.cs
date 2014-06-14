@@ -14,21 +14,24 @@ public class tk2dSprite : tk2dBaseSprite
 	Vector3[] meshVertices;
 	Vector3[] meshNormals = null;
 	Vector4[] meshTangents = null;
-	Color[] meshColors;
+	Color32[] meshColors;
 	
-	void Awake()
+	new void Awake()
 	{
+		base.Awake();
+
 		// Create mesh, independently to everything else
 		mesh = new Mesh();
+		mesh.hideFlags = HideFlags.DontSave;
 		GetComponent<MeshFilter>().mesh = mesh;
 		
 		// This will not be set when instantiating in code
 		// In that case, Build will need to be called
-		if (collection)
+		if (Collection)
 		{
 			// reset spriteId if outside bounds
 			// this is when the sprite collection data is corrupt
-			if (_spriteId < 0 || _spriteId >= collection.Count)
+			if (_spriteId < 0 || _spriteId >= Collection.Count)
 				_spriteId = 0;
 			
 			Build();
@@ -58,10 +61,10 @@ public class tk2dSprite : tk2dBaseSprite
 	
 	public override void Build()
 	{
-		var sprite = collection.spriteDefinitions[spriteId];
+		var sprite = collectionInst.spriteDefinitions[spriteId];
 
 		meshVertices = new Vector3[sprite.positions.Length];
-        meshColors = new Color[sprite.positions.Length];
+        meshColors = new Color32[sprite.positions.Length];
 		
 		meshNormals = new Vector3[0];
 		meshTangents = new Vector4[0];
@@ -81,6 +84,7 @@ public class tk2dSprite : tk2dBaseSprite
 		if (mesh == null)
 		{
 			mesh = new Mesh();
+			mesh.hideFlags = HideFlags.DontSave;
 			GetComponent<MeshFilter>().mesh = mesh;
 		}
 		
@@ -88,9 +92,10 @@ public class tk2dSprite : tk2dBaseSprite
 		mesh.vertices = meshVertices;
 		mesh.normals = meshNormals;
 		mesh.tangents = meshTangents;
-		mesh.colors = meshColors;
+		mesh.colors32 = meshColors;
 		mesh.uv = sprite.uvs;
 		mesh.triangles = sprite.indices;
+		mesh.bounds = AdjustedMeshBounds( GetBounds(), renderLayer );
 		
 		UpdateMaterial();
 		CreateCollider();
@@ -105,6 +110,26 @@ public class tk2dSprite : tk2dBaseSprite
 		return tk2dBaseSprite.AddComponent<tk2dSprite>(go, spriteCollection, spriteId);
 	}
 	
+	/// <summary>
+	/// Adds a tk2dSprite as a component to the gameObject passed in, setting up necessary parameters and building geometry.
+	/// Convenience alias of tk2dBaseSprite.AddComponent<tk2dSprite>(...).
+	/// </summary>
+	public static tk2dSprite AddComponent(GameObject go, tk2dSpriteCollectionData spriteCollection, string spriteName)
+	{
+		return tk2dBaseSprite.AddComponent<tk2dSprite>(go, spriteCollection, spriteName);
+	}
+	
+	/// <summary>
+	/// Create a sprite (and gameObject) displaying the region of the texture specified.
+	/// Use <see cref="tk2dSpriteCollectionData.CreateFromTexture"/> if you need to create a sprite collection
+	/// with multiple sprites.
+	/// Convenience alias of tk2dBaseSprite.CreateFromTexture<tk2dSprite>(...)
+	/// </summary>
+	public static GameObject CreateFromTexture(Texture texture, tk2dSpriteCollectionSize size, Rect region, Vector2 anchor)
+	{
+		return tk2dBaseSprite.CreateFromTexture<tk2dSprite>(texture, size, region, anchor);
+	}
+
 	protected override void UpdateGeometry() { UpdateGeometryImpl(); }
 	protected override void UpdateColors() { UpdateColorsImpl(); }
 	protected override void UpdateVertices() { UpdateVerticesImpl(); }
@@ -112,25 +137,21 @@ public class tk2dSprite : tk2dBaseSprite
 	
 	protected void UpdateColorsImpl()
 	{
-#if UNITY_EDITOR
 		// This can happen with prefabs in the inspector
 		if (mesh == null || meshColors == null || meshColors.Length == 0)
 			return;
-#endif
-		
+
 		SetColors(meshColors);
-		mesh.colors = meshColors;
+		mesh.colors32 = meshColors;
 	}
 	
 	protected void UpdateVerticesImpl()
 	{
-		var sprite = collection.spriteDefinitions[spriteId];
+		var sprite = collectionInst.spriteDefinitions[spriteId];
 		
-#if UNITY_EDITOR
 		// This can happen with prefabs in the inspector
 		if (mesh == null || meshVertices == null || meshVertices.Length == 0)
 			return;
-#endif
 		
 		// Clear out normals and tangents when switching from a sprite with them to one without
 		if (sprite.normals.Length != meshNormals.Length)
@@ -147,27 +168,22 @@ public class tk2dSprite : tk2dBaseSprite
 		mesh.normals = meshNormals;
 		mesh.tangents = meshTangents;
 		mesh.uv = sprite.uvs;
-		mesh.bounds = GetBounds();
+		mesh.bounds = AdjustedMeshBounds( GetBounds(), renderLayer );
 	}
 
 	protected void UpdateGeometryImpl()
 	{
-#if UNITY_EDITOR
 		// This can happen with prefabs in the inspector
 		if (mesh == null)
 			return;
-#else
-		if (mesh == null)
-			Build();
-#endif
 		
-		var sprite = collection.spriteDefinitions[spriteId];
+		var sprite = collectionInst.spriteDefinitions[spriteId];
 		if (meshVertices == null || meshVertices.Length != sprite.positions.Length)
 		{
 			meshVertices = new Vector3[sprite.positions.Length];
 			meshNormals = (sprite.normals != null && sprite.normals.Length > 0)?(new Vector3[sprite.normals.Length]):(new Vector3[0]);
 			meshTangents = (sprite.tangents != null && sprite.tangents.Length > 0)?(new Vector4[sprite.tangents.Length]):(new Vector4[0]);
-			meshColors = new Color[sprite.positions.Length];
+			meshColors = new Color32[sprite.positions.Length];
 		}
 		SetPositions(meshVertices, meshNormals, meshTangents);
 		SetColors(meshColors);
@@ -176,34 +192,57 @@ public class tk2dSprite : tk2dBaseSprite
 		mesh.vertices = meshVertices;
 		mesh.normals = meshNormals;
 		mesh.tangents = meshTangents;
-		mesh.colors = meshColors;
+		mesh.colors32 = meshColors;
 		mesh.uv = sprite.uvs;
-		mesh.bounds = GetBounds();
+		mesh.bounds = AdjustedMeshBounds( GetBounds(), renderLayer );
         mesh.triangles = sprite.indices;
 	}
 	
 	protected override void UpdateMaterial()
 	{
-		if (renderer.sharedMaterial != collection.spriteDefinitions[spriteId].material)
-			renderer.material = collection.spriteDefinitions[spriteId].material;
+		if (renderer.sharedMaterial != collectionInst.spriteDefinitions[spriteId].materialInst)
+			renderer.material = collectionInst.spriteDefinitions[spriteId].materialInst;
 	}
 	
 	protected override int GetCurrentVertexCount()
 	{
-#if UNITY_EDITOR
 		if (meshVertices == null)
 			return 0;
-#else
-		if (meshVertices == null)
-			Build();
-#endif
 		// Really nasty bug here found by Andrew Welch.
 		return meshVertices.Length;
 	}
+
+#if UNITY_EDITOR
+	void OnDrawGizmos() {
+		if (collectionInst != null && spriteId >= 0 && spriteId < collectionInst.Count) {
+			var sprite = collectionInst.spriteDefinitions[spriteId];
+			Gizmos.color = Color.clear;
+			Gizmos.matrix = transform.localToWorldMatrix;
+			Gizmos.DrawCube(Vector3.Scale(sprite.untrimmedBoundsData[0], _scale), Vector3.Scale(sprite.untrimmedBoundsData[1], _scale));
+			Gizmos.matrix = Matrix4x4.identity;
+			Gizmos.color = Color.white;
+		}
+	}
+#endif
 	
 	public override void ForceBuild()
 	{
 		base.ForceBuild();
 		GetComponent<MeshFilter>().mesh = mesh;
+	}
+
+	public override void ReshapeBounds(Vector3 dMin, Vector3 dMax) {
+		var sprite = CurrentSprite;
+		Vector3 oldMin = Vector3.Scale(sprite.untrimmedBoundsData[0] - 0.5f * sprite.untrimmedBoundsData[1], _scale);
+		Vector3 oldSize = Vector3.Scale(sprite.untrimmedBoundsData[1], _scale);
+		Vector3 newScale = oldSize + dMax - dMin;
+		newScale.x /= sprite.untrimmedBoundsData[1].x;
+		newScale.y /= sprite.untrimmedBoundsData[1].y;
+		Vector3 scaledMin = new Vector3(Mathf.Approximately(_scale.x, 0) ? 0 : (oldMin.x * newScale.x / _scale.x),
+			Mathf.Approximately(_scale.y, 0) ? 0 : (oldMin.y * newScale.y / _scale.y));
+		Vector3 offset = oldMin + dMin - scaledMin;
+		offset.z = 0;
+		transform.position = transform.TransformPoint(offset);
+		scale = new Vector3(newScale.x, newScale.y, _scale.z);
 	}
 }

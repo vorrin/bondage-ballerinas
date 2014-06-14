@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class tk2dSpriteColliderIsland
@@ -60,15 +61,16 @@ public class tk2dSpriteCollectionDefinition
 		Default,
 		BlackZeroAlpha,
 		Extend,
+		TileXY,
 	}
 	
 	public enum ColliderType
 	{
-		Unset,		// don't try to create or destroy anything
-		None,		// nothing will be created, if something exists, it will be destroyed
-		BoxTrimmed, // box, trimmed to cover visible region
-		BoxCustom, 	// box, with custom values provided by user
-		Polygon, 	// polygon, can be concave
+		UserDefined,		// don't try to create or destroy anything
+		ForceNone,			// nothing will be created, if something exists, it will be destroyed
+		BoxTrimmed, 		// box, trimmed to cover visible region
+		BoxCustom, 			// box, with custom values provided by user
+		Polygon, 			// polygon, can be concave
 	}
 	
 	public enum PolygonColliderCap
@@ -93,17 +95,23 @@ public class tk2dSpriteCollectionDefinition
 		SpriteSheet,
 		Font
 	}
-	
+
+	public enum DiceFilter
+	{
+		Complete,
+		SolidOnly,
+		TransparentOnly,
+	}
+
 	public string name = "";
 	
 	public bool disableTrimming = false;
     public bool additive = false;
     public Vector3 scale = new Vector3(1,1,1);
     
-	[HideInInspector]
-    public Texture2D texture;
+    public Texture2D texture = null;
 	
-	[HideInInspector] [System.NonSerialized]
+	[System.NonSerialized]
 	public Texture2D thumbnailTexture;
 	
 	public int materialId = 0;
@@ -112,13 +120,15 @@ public class tk2dSpriteCollectionDefinition
 	public float anchorX, anchorY;
     public Object overrideMesh;
 
+    public bool doubleSidedSprite = false;
 	public bool customSpriteGeometry = false;
 	public tk2dSpriteColliderIsland[] geometryIslands = new tk2dSpriteColliderIsland[0];
 	
 	public bool dice = false;
 	public int diceUnitX = 64;
-	public int diceUnitY = 0;
-	
+	public int diceUnitY = 64;
+	public DiceFilter diceFilter = DiceFilter.Complete;
+
 	public Pad pad = Pad.Default;
 	public int extraPadding = 0; // default
 	
@@ -131,14 +141,16 @@ public class tk2dSpriteCollectionDefinition
 	public int regionX, regionY, regionW, regionH;
 	public int regionId;
 	
-	public ColliderType colliderType = ColliderType.Unset;
+	public ColliderType colliderType = ColliderType.UserDefined;
 	public Vector2 boxColliderMin, boxColliderMax;
 	public tk2dSpriteColliderIsland[] polyColliderIslands;
-	public PolygonColliderCap polyColliderCap = PolygonColliderCap.None;
+	public PolygonColliderCap polyColliderCap = PolygonColliderCap.FrontAndBack;
 	public bool colliderConvex = false;
 	public bool colliderSmoothSphereCollisions = false;
 	public ColliderColor colliderColor = ColliderColor.Default;
-	
+
+	public List<tk2dSpriteDefinition.AttachPoint> attachPoints = new List<tk2dSpriteDefinition.AttachPoint>();
+
 	public void CopyFrom(tk2dSpriteCollectionDefinition src)
 	{
 		name = src.name;
@@ -153,12 +165,14 @@ public class tk2dSpriteCollectionDefinition
 		anchorY = src.anchorY;
 		overrideMesh = src.overrideMesh;
 		
+		doubleSidedSprite = src.doubleSidedSprite;
 		customSpriteGeometry = src.customSpriteGeometry;
 		geometryIslands = src.geometryIslands;
 		
 		dice = src.dice;
 		diceUnitX = src.diceUnitX;
 		diceUnitY = src.diceUnitY;
+		diceFilter = src.diceFilter;
 		pad = src.pad;
 		
 		source = src.source;
@@ -212,6 +226,13 @@ public class tk2dSpriteCollectionDefinition
 		{
 			geometryIslands = new tk2dSpriteColliderIsland[0];
 		}
+
+		attachPoints = new List<tk2dSpriteDefinition.AttachPoint>(src.attachPoints.Count);
+		foreach (tk2dSpriteDefinition.AttachPoint srcAp in src.attachPoints) {
+			tk2dSpriteDefinition.AttachPoint ap = new tk2dSpriteDefinition.AttachPoint();
+			ap.CopyFrom(srcAp);
+			attachPoints.Add(ap);
+		}
 	}
 	
 	public void Clear()
@@ -236,8 +257,11 @@ public class tk2dSpriteCollectionDefinition
 		if (dice != src.dice) return false;
 		if (diceUnitX != src.diceUnitX) return false;
 		if (diceUnitY != src.diceUnitY) return false;
+		if (diceFilter != src.diceFilter) return false;
 		if (pad != src.pad) return false;
 		if (extraPadding != src.extraPadding) return false;
+
+		if (doubleSidedSprite != src.doubleSidedSprite) return false;
 
 		if (customSpriteGeometry != src.customSpriteGeometry) return false;
 		if (geometryIslands != src.geometryIslands) return false;
@@ -278,6 +302,11 @@ public class tk2dSpriteCollectionDefinition
 		if (colliderColor != src.colliderColor) return false;
 		if (colliderSmoothSphereCollisions != src.colliderSmoothSphereCollisions) return false;
 		if (colliderConvex != src.colliderConvex) return false;
+
+		if (attachPoints.Count != src.attachPoints.Count) return false;
+		for (int i = 0; i < attachPoints.Count; ++i) {
+			if (!attachPoints[i].CompareTo(src.attachPoints[i])) return false;
+		}
 		
 		return true;
 	}	
@@ -291,7 +320,7 @@ public class tk2dSpriteCollectionDefault
 	public tk2dSpriteCollectionDefinition.Anchor anchor = tk2dSpriteCollectionDefinition.Anchor.MiddleCenter;
 	public tk2dSpriteCollectionDefinition.Pad pad = tk2dSpriteCollectionDefinition.Pad.Default;	
 	
-	public tk2dSpriteCollectionDefinition.ColliderType colliderType = tk2dSpriteCollectionDefinition.ColliderType.None;
+	public tk2dSpriteCollectionDefinition.ColliderType colliderType = tk2dSpriteCollectionDefinition.ColliderType.UserDefined;
 }
 
 [System.Serializable]
@@ -333,7 +362,7 @@ public class tk2dSpriteSheetSource
 	public int version = 0;
 	public const int CURRENT_VERSION = 1;
 
-	public tk2dSpriteCollectionDefinition.ColliderType colliderType = tk2dSpriteCollectionDefinition.ColliderType.None;
+	public tk2dSpriteCollectionDefinition.ColliderType colliderType = tk2dSpriteCollectionDefinition.ColliderType.UserDefined;
 	
 	public void CopyFrom(tk2dSpriteSheetSource src)
 	{
@@ -388,13 +417,18 @@ public class tk2dSpriteSheetSource
 public class tk2dSpriteCollectionFont
 {
 	public bool active = false;
-	public Object bmFont;
+	public TextAsset bmFont;
 	public Texture2D texture;
     public bool dupeCaps = false; // duplicate lowercase into uc, or vice-versa, depending on which exists
 	public bool flipTextureY = false;
 	public int charPadX = 0;
 	public tk2dFontData data;
 	public tk2dFont editorData;
+	public int materialId;
+
+	public bool useGradient = false;
+	public Texture2D gradientTexture = null;
+	public int gradientCount = 1;
 	
 	public void CopyFrom(tk2dSpriteCollectionFont src)
 	{
@@ -406,6 +440,10 @@ public class tk2dSpriteCollectionFont
 		charPadX = src.charPadX;
 		data = src.data;
 		editorData = src.editorData;
+		materialId = src.materialId;
+		gradientCount = src.gradientCount;
+		gradientTexture = src.gradientTexture;
+		useGradient = src.useGradient;
 	}
 	
 	public string Name
@@ -430,10 +468,24 @@ public class tk2dSpriteCollectionFont
 	}
 }
 
+[System.Serializable]
+public class tk2dSpriteCollectionPlatform
+{
+	public string name = "";
+	public tk2dSpriteCollection spriteCollection = null;
+	public bool Valid { get { return name.Length > 0 && spriteCollection != null; } }
+	public void CopyFrom(tk2dSpriteCollectionPlatform source)
+	{
+		name = source.name;
+		spriteCollection = source.spriteCollection;
+	}
+}
 
 [AddComponentMenu("2D Toolkit/Backend/tk2dSpriteCollection")]
 public class tk2dSpriteCollection : MonoBehaviour 
 {
+	public const int CURRENT_VERSION = 4;
+
 	public enum NormalGenerationMode
 	{
 		None,
@@ -441,46 +493,53 @@ public class tk2dSpriteCollection : MonoBehaviour
 		NormalsAndTangents,
 	};
 	
-    // legacy data
-    [HideInInspector]
-    public tk2dSpriteCollectionDefinition[] textures;
+    // Deprecated fields
+    [SerializeField] private tk2dSpriteCollectionDefinition[] textures; 
+    [SerializeField] private Texture2D[] textureRefs;
+
+    public Texture2D[] DoNotUse__TextureRefs { get { return textureRefs; } set { textureRefs = value; } } // Don't use this for anything. Except maybe in tk2dSpriteCollectionBuilderDeprecated...
 
     // new method
-    public Texture2D[] textureRefs;
 	public tk2dSpriteSheetSource[] spriteSheets;
 
 	public tk2dSpriteCollectionFont[] fonts;
-	
 	public tk2dSpriteCollectionDefault defaults;
+
+	// platforms
+	public List<tk2dSpriteCollectionPlatform> platforms = new List<tk2dSpriteCollectionPlatform>();
+	public bool managedSpriteCollection = false; // true when generated and managed by system, eg. platform specific data
+	public bool HasPlatformData { get { return platforms.Count > 1; } }
+	public bool loadable = false;
+	public AtlasFormat atlasFormat = AtlasFormat.UnityTexture;
 	
-	[HideInInspector]
-	public int maxTextureSize = 1024;
+	public int maxTextureSize = 2048;
 	
 	public bool forceTextureSize = false;
-	public int forcedTextureWidth = 1024;
-	public int forcedTextureHeight = 1024;
+	public int forcedTextureWidth = 2048;
+	public int forcedTextureHeight = 2048;
 	
 	public enum TextureCompression
 	{
 		Uncompressed,
 		Reduced16Bit,
 		Compressed,
-		Dithered16Bit_4444,
-		Dithered16Bit_565,
+		Dithered16Bit_Alpha,
+		Dithered16Bit_NoAlpha,
 	}
-	[HideInInspector]
+
+	public enum AtlasFormat {
+		UnityTexture, // Normal Unity texture
+		Png,
+	}
+
 	public TextureCompression textureCompression = TextureCompression.Uncompressed;
 	
-	[HideInInspector]
 	public int atlasWidth, atlasHeight;
-	[HideInInspector]
 	public bool forceSquareAtlas = false;
-	[HideInInspector]
 	public float atlasWastage;
-	[HideInInspector]
 	public bool allowMultipleAtlases = false;
+	public bool removeDuplicates = true;
 	
-	[HideInInspector]
     public tk2dSpriteCollectionDefinition[] textureParams;
     
 	public tk2dSpriteCollectionData spriteCollection;
@@ -489,27 +548,101 @@ public class tk2dSpriteCollection : MonoBehaviour
 	public Material[] altMaterials;
 	public Material[] atlasMaterials;
 	public Texture2D[] atlasTextures;
+	public TextAsset[] atlasTextureFiles = new TextAsset[0];
 	
-	[HideInInspector]
-	public bool useTk2dCamera = false;
-	[HideInInspector]
-	public int targetHeight = 640;
-	[HideInInspector]
-	public float targetOrthoSize = 1.0f;
+	[SerializeField] private bool useTk2dCamera = false;
+	[SerializeField] private int targetHeight = 640;
+	[SerializeField] private float targetOrthoSize = 10.0f;
 	
-	public bool pixelPerfectPointSampled = false;
+	// New method of storing sprite size
+	public tk2dSpriteCollectionSize sizeDef = tk2dSpriteCollectionSize.Default();
+
+	public float globalScale = 1.0f;
+	public float globalTextureRescale = 1.0f;
+
+	// Remember test data for attach points
+	[System.Serializable]
+	public class AttachPointTestSprite {
+		public string attachPointName = "";
+		public tk2dSpriteCollectionData spriteCollection = null;
+		public int spriteId = -1;
+		public bool CompareTo(AttachPointTestSprite src) {
+			return src.attachPointName == attachPointName && src.spriteCollection == spriteCollection && src.spriteId == spriteId;
+		}
+		public void CopyFrom(AttachPointTestSprite src) {
+			attachPointName = src.attachPointName;
+			spriteCollection = src.spriteCollection;
+			spriteId = src.spriteId;
+		}
+	}
+	public List<AttachPointTestSprite> attachPointTestSprites = new List<AttachPointTestSprite>();
 	
+	// Texture settings
+	[SerializeField]
+	private bool pixelPerfectPointSampled = false; // obsolete
+	public FilterMode filterMode = FilterMode.Bilinear;
+	public TextureWrapMode wrapMode = TextureWrapMode.Clamp;
+	public bool userDefinedTextureSettings = false;
+	public bool mipmapEnabled = false;
+	public int anisoLevel = 1;
+
+	// Starts off with Unity Physics 3D for current platforms
+	public tk2dSpriteDefinition.PhysicsEngine physicsEngine = tk2dSpriteDefinition.PhysicsEngine.Physics3D;
 	public float physicsDepth = 0.1f;
 	
 	public bool disableTrimming = false;
 	
 	public NormalGenerationMode normalGenerationMode = NormalGenerationMode.None;
 	
-	[HideInInspector]
 	public int padAmount = -1; // default
 	
-	[HideInInspector]
 	public bool autoUpdate = true;
 	
 	public float editorDisplayScale = 1.0f;
+
+	public int version = 0;
+
+	public string assetName = "";
+
+	// Fix up upgraded data structures
+	public void Upgrade()
+	{
+		if (version == CURRENT_VERSION)
+			return;
+
+		Debug.Log("SpriteCollection '" + this.name + "' - Upgraded from version " + version.ToString());
+
+		if (version == 0)
+		{
+			if (pixelPerfectPointSampled)
+				filterMode = FilterMode.Point;
+			else
+				filterMode = FilterMode.Bilinear;
+
+			// don't bother messing about with user settings
+			// on old atlases
+			userDefinedTextureSettings = true; 
+		}
+
+		if (version < 3)
+		{
+			if (textureRefs != null && textureParams != null && textureRefs.Length == textureParams.Length)
+			{
+				for (int i = 0; i < textureRefs.Length; ++i)
+					textureParams[i].texture = textureRefs[i];
+
+				textureRefs = null;
+			}
+		}
+
+		if (version < 4) {
+			sizeDef.CopyFromLegacy( useTk2dCamera, targetOrthoSize, targetHeight );
+		}
+
+		version = CURRENT_VERSION;
+
+#if UNITY_EDITOR
+		UnityEditor.EditorUtility.SetDirty(this);
+#endif
+	}
 }

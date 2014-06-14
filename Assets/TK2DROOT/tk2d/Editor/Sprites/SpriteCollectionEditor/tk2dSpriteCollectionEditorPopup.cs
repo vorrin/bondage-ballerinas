@@ -16,11 +16,13 @@ namespace tk2dEditor.SpriteCollectionEditor
 		Texture2D GetTextureForSprite(int spriteId);
 		
 		SpriteCollectionProxy SpriteCollection { get; }
-		
+
 		int InspectorWidth { get; }
 		SpriteView SpriteView { get; }
 		void SelectSpritesFromList(int[] indices);
 		void SelectSpritesInSpriteSheet(int spriteSheetId, int[] spriteIds);
+
+		void Commit();
 	}
 	
 	public class SpriteCollectionEditorEntry
@@ -58,7 +60,7 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 	SpriteCollectionProxy spriteCollectionProxy = null;
 	public SpriteCollectionProxy SpriteCollection { get { return spriteCollectionProxy; } }
 	public SpriteView SpriteView { get { return spriteView; } }
-	
+
 	// This lists all entries
 	List<SpriteCollectionEditorEntry> entries = new List<SpriteCollectionEditorEntry>();
 	// This lists all selected entries
@@ -152,12 +154,18 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		if (searchFilter.Length > 0)
 		{
 			// re-sort list
-			entries = (from entry in entries where Contains(entry.name, searchFilter) orderby entry.type, entry.name select entry).ToList();
+			entries = (from entry in entries where Contains(entry.name, searchFilter) select entry)
+						.OrderBy( e => e.type )
+						.ThenBy( e => e.name, new tk2dEditor.Shared.NaturalComparer() )
+						.ToList();
 		}
 		else
 		{
 			// re-sort list
-			entries = (from entry in entries orderby entry.type, entry.name select entry).ToList();
+			entries = (from entry in entries select entry)
+						.OrderBy( e => e.type )
+						.ThenBy( e => e.name, new tk2dEditor.Shared.NaturalComparer() )
+						.ToList();
 		}
 		for (int i = 0; i < entries.Count; ++i)
 			entries[i].listIndex = i;
@@ -176,11 +184,16 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		for (int spriteIndex = 0; spriteIndex < spriteCollectionProxy.textureParams.Count; ++spriteIndex)
 		{
 			var sprite = spriteCollectionProxy.textureParams[spriteIndex];
-			var spriteSourceTexture = spriteCollectionProxy.textureRefs[spriteIndex];
-			if (spriteSourceTexture == null) continue;
+			var spriteSourceTexture = sprite.texture;
+			if (spriteSourceTexture == null && sprite.name.Length == 0) continue;
 			
 			var newEntry = new SpriteCollectionEditorEntry();
 			newEntry.name = sprite.name;
+
+			if (sprite.texture == null) {
+				newEntry.name += " (missing)";
+			}
+
 			newEntry.index = spriteIndex;
 			newEntry.type = SpriteCollectionEditorEntry.Type.Sprite;
 			entries.Add(newEntry);
@@ -217,6 +230,7 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 	public void SetGenerator(tk2dSpriteCollection spriteCollection)
 	{
 		this._spriteCollection = spriteCollection;
+		this.firstRun = true;
 		spriteCollectionProxy = new SpriteCollectionProxy(spriteCollection);
 		PopulateEntries();
 	}
@@ -253,7 +267,7 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		{
 			if (cachedSpriteTexture == null)
 			{
-				var tex = spriteCollectionProxy.textureRefs[spriteId];
+				var tex = param.texture;
 				cachedSpriteTexture = new Texture2D(param.regionW, param.regionH);
 				for (int y = 0; y < param.regionH; ++y)
 				{
@@ -269,7 +283,7 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		}
 		else
 		{
-			return spriteCollectionProxy.textureRefs[spriteId];
+			return param.texture;
 		}
 	}
 	
@@ -301,6 +315,12 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 	void OnDisable()
 	{
 		ClearTextureCache();
+		_spriteCollection = null;
+	}
+
+	void OnDestroy() {
+		tk2dSpriteThumbnailCache.Done();
+		tk2dEditorSkin.Done();
 	}
 	
 	string searchFilter = "";
@@ -413,16 +433,57 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		}
 		
 		if (GUILayout.Button("Commit", EditorStyles.toolbarButton) && spriteCollectionProxy != null)
-		{
-			spriteCollectionProxy.CopyToTarget();
-			tk2dSpriteCollectionBuilder.ResetCurrentBuild();
-			tk2dSpriteCollectionBuilder.Rebuild(_spriteCollection);
-			spriteCollectionProxy.CopyFromSource();
-		}
+			Commit();
 		
 		GUILayout.EndHorizontal();
 	}
+
+	public void Commit()
+	{
+		spriteCollectionProxy.DeleteUnusedData();
+		spriteCollectionProxy.CopyToTarget();
+		tk2dSpriteCollectionBuilder.ResetCurrentBuild();
+		if (!tk2dSpriteCollectionBuilder.Rebuild(_spriteCollection)) {
+			EditorUtility.DisplayDialog("Failed to commit sprite collection", 
+				"Please check the console for more details.", "Ok");
+		}
+		spriteCollectionProxy.CopyFromSource();
+	}
 	
+	void HandleListKeyboardShortcuts(int controlId)
+	{
+		Event ev = Event.current;
+		if (ev.type == EventType.KeyDown 
+			&& (GUIUtility.keyboardControl == controlId || GUIUtility.keyboardControl == 0)
+			&& entries != null && entries.Count > 0)
+		{
+			int selectedIndex = 0;
+			foreach (var e in entries)
+			{
+				if (e.selected) break;
+				selectedIndex++;
+			}
+			int newSelectedIndex = selectedIndex;
+			switch (ev.keyCode)
+			{
+				case KeyCode.Home: newSelectedIndex = 0; break;
+				case KeyCode.End: newSelectedIndex = entries.Count - 1; break;
+				case KeyCode.UpArrow: newSelectedIndex = Mathf.Max(selectedIndex - 1, 0); break;
+				case KeyCode.DownArrow: newSelectedIndex = Mathf.Min(selectedIndex + 1, entries.Count - 1); break;
+				case KeyCode.PageUp: newSelectedIndex = Mathf.Max(selectedIndex - 10, 0); break;
+				case KeyCode.PageDown: newSelectedIndex = Mathf.Min(selectedIndex + 10, entries.Count - 1); break;
+			}
+			if (newSelectedIndex != selectedIndex)
+			{
+				for (int i = 0; i < entries.Count; ++i)
+					entries[i].selected = (i == newSelectedIndex);
+				UpdateSelection();
+				Repaint();
+				ev.Use();
+			}
+		}
+	}
+
 	Vector2 spriteListScroll = Vector2.zero;
 	int spriteListSelectionKey = 0;
 	void DrawSpriteList()
@@ -433,28 +494,62 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 			return;
 		}
 		
+		int spriteListControlId = GUIUtility.GetControlID("tk2d.SpriteList".GetHashCode(), FocusType.Keyboard);
+		HandleListKeyboardShortcuts(spriteListControlId);
+
 		spriteListScroll = GUILayout.BeginScrollView(spriteListScroll, GUILayout.Width(leftBarWidth));
-		GUILayout.BeginVertical(tk2dEditorSkin.SC_ListBoxBG, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 		
 		bool multiSelectKey = (Application.platform == RuntimePlatform.OSXEditor)?Event.current.command:Event.current.control;
 		bool shiftSelectKey = Event.current.shift;
-		
+
 		bool selectionChanged = false;
 		SpriteCollectionEditorEntry.Type lastType = SpriteCollectionEditorEntry.Type.None;
+
+		// Run through the list, measure total height
+		// Its significantly faster with loads of sprites in there.
+		int height = 0;
+		int labelHeight = (int)tk2dEditorSkin.SC_ListBoxSectionHeader.CalcHeight(GUIContent.none, 100);
+		int itemHeight = (int)tk2dEditorSkin.SC_ListBoxItem.CalcHeight(GUIContent.none, 100);
+		int spacing = 8;
 		foreach (var entry in entries)
 		{
 			if (lastType != entry.type)
 			{
 				if (lastType != SpriteCollectionEditorEntry.Type.None)
-					GUILayout.Space(8);
+					height += spacing;
+				height += labelHeight;
+				lastType = entry.type;
+			}
+			height += itemHeight;
+		}
+
+		Rect rect = GUILayoutUtility.GetRect(1, height, GUILayout.ExpandWidth(true));
+		int width = Mathf.Max((int)rect.width, 100);
+		int y = 0;
+
+		// Second pass, just draw what is visible
+		// Don't care about the section labels, theres only a max of 4 of those.
+		lastType = SpriteCollectionEditorEntry.Type.None;
+		foreach (var entry in entries)
+		{
+			if (lastType != entry.type)
+			{
+				if (lastType != SpriteCollectionEditorEntry.Type.None)
+					y += spacing;
 				else
 					GUI.SetNextControlName("firstLabel");
 				
-				GUILayout.Label(GetEntryTypeString(entry.type), tk2dEditorSkin.SC_ListBoxSectionHeader, GUILayout.ExpandWidth(true));
+				GUI.Label(new Rect(0, y, width, labelHeight), GetEntryTypeString(entry.type), tk2dEditorSkin.SC_ListBoxSectionHeader);
+				y += labelHeight;
 				lastType = entry.type;
 			}
 			
-			bool newSelected = GUILayout.Toggle(entry.selected, entry.name, tk2dEditorSkin.SC_ListBoxItem, GUILayout.ExpandWidth(true));
+			bool newSelected = entry.selected;
+			float realY = y - spriteListScroll.y + itemHeight;
+			if (realY > 0 && realY < Screen.height) { // screen.height is wrong, but is conservative
+				newSelected = GUI.Toggle(new Rect(0, y, width, itemHeight), entry.selected, entry.name, tk2dEditorSkin.SC_ListBoxItem);
+			}
+			y += itemHeight;
 			if (newSelected != entry.selected)
 			{
 				GUI.FocusControl("firstLabel");
@@ -541,11 +636,11 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		
 		if (selectionChanged)
 		{
+			GUIUtility.keyboardControl = spriteListControlId;
 			UpdateSelection();
 			Repaint();
 		}
 		
-		GUILayout.EndVertical();
 		GUILayout.EndScrollView();
 
 		Rect viewRect = GUILayoutUtility.GetLastRect();
@@ -581,19 +676,43 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 		Debug.LogError("Unhandled type");
 		return "";
 	}
+
+	bool PromptImportDuplicate(string title, string message) {
+		return EditorUtility.DisplayDialog(title, message, "Ignore", "Create Copy");
+	}
 	
 	void HandleDroppedPayload(Object[] objects)
 	{
+		bool hasDuplicates = false;
+		foreach (var obj in objects)
+		{
+			Texture2D tex = obj as Texture2D;
+			if (tex != null) {
+				if (spriteCollectionProxy.FindSpriteBySource(tex) != -1) {
+					hasDuplicates = true;
+				}
+			}
+		}
+
+		bool cloneDuplicates = false;
+		if (hasDuplicates && EditorUtility.DisplayDialog("Duplicate textures detected.",
+				"One or more textures is already in the collection. What do you want to do with the duplicates?", 
+				"Clone", "Ignore")) {
+			cloneDuplicates = true;
+		}
+
 		List<int> addedIndices = new List<int>();
 		foreach (var obj in objects)
 		{
 			Texture2D tex = obj as Texture2D;
-			string name = spriteCollectionProxy.FindUniqueTextureName(tex.name);
-			int slot = spriteCollectionProxy.FindOrCreateEmptySpriteSlot();
-			spriteCollectionProxy.textureParams[slot].name = name;
-			spriteCollectionProxy.textureParams[slot].colliderType = tk2dSpriteCollectionDefinition.ColliderType.None;
-			spriteCollectionProxy.textureRefs[slot] = (Texture2D)obj;
-			addedIndices.Add(slot);
+			if ((tex != null) && (cloneDuplicates || spriteCollectionProxy.FindSpriteBySource(tex) == -1)) {
+				string name = spriteCollectionProxy.FindUniqueTextureName(tex.name);
+				int slot = spriteCollectionProxy.FindOrCreateEmptySpriteSlot();
+				spriteCollectionProxy.textureParams[slot].name = name;
+				spriteCollectionProxy.textureParams[slot].colliderType = tk2dSpriteCollectionDefinition.ColliderType.UserDefined;
+				spriteCollectionProxy.textureParams[slot].texture = (Texture2D)obj;
+				addedIndices.Add(slot);
+			}
 		}
 		// And now select them
 		searchFilter = "";
@@ -681,7 +800,62 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 	bool dragging = false;
 	bool currentDraggingValue = false;
 
+	bool firstRun = true;
+	List<UnityEngine.Object> assetsInResources = new List<UnityEngine.Object>();
 	
+	bool InResources(UnityEngine.Object obj)
+	{
+		return AssetDatabase.GetAssetPath(obj).ToLower().IndexOf("/resources/") != -1;
+	}
+
+	void CheckForAssetsInResources()
+	{
+		assetsInResources.Clear();
+		foreach (tk2dSpriteCollectionDefinition tex in SpriteCollection.textureParams)
+		{
+			if (tex.texture == null) continue;
+			if (InResources(tex.texture) && assetsInResources.IndexOf(tex.texture) == -1) assetsInResources.Add(tex.texture);
+		}
+		foreach (tk2dSpriteCollectionFont font in SpriteCollection.fonts)
+		{
+			if (font.texture != null && InResources(font.texture) && assetsInResources.IndexOf(font.texture) == -1) assetsInResources.Add(font.texture);
+			if (font.bmFont != null && InResources(font.bmFont) && assetsInResources.IndexOf(font.bmFont) == -1) assetsInResources.Add(font.bmFont);
+		}
+	}
+
+	Vector2 assetWarningScroll = Vector2.zero;
+	bool HandleAssetsInResources()
+	{
+		if (firstRun && SpriteCollection != null)
+		{
+			CheckForAssetsInResources();
+			firstRun = false;
+		}
+		if (assetsInResources.Count > 0)
+		{
+			tk2dGuiUtility.InfoBox("Warning: The following assets are in one or more resources directories.\n" + 
+				"These files will be included in the build.",
+				tk2dGuiUtility.WarningLevel.Warning);
+			assetWarningScroll = GUILayout.BeginScrollView(assetWarningScroll, GUILayout.ExpandWidth(true));
+			foreach (UnityEngine.Object obj in assetsInResources)
+			{
+				EditorGUILayout.ObjectField(obj, typeof(UnityEngine.Object), false);
+			}
+			GUILayout.EndScrollView();
+			GUILayout.Space(8);
+			GUILayout.BeginHorizontal();
+			GUILayout.FlexibleSpace();
+			if (GUILayout.Button("Ok", GUILayout.MinWidth(100)))
+			{
+				assetsInResources.Clear();
+				Repaint();
+			}
+			GUILayout.EndHorizontal();
+			return true;
+		}
+		return false;
+	}
+
     void OnGUI() 
 	{
 		if (Event.current.type == EventType.DragUpdated)
@@ -707,6 +881,8 @@ public class tk2dSpriteCollectionEditorPopup : EditorWindow, IEditorHost
 			HandleDroppedPayload(deferredDroppedObjects);
 			deferredDroppedObjects = null;
 		}
+
+		if (HandleAssetsInResources()) return;
 		
 		GUILayout.BeginVertical();
 
