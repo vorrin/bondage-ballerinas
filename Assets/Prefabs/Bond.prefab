@@ -92,9 +92,9 @@ MonoBehaviour:
   RopePhysicsMaterial: {fileID: 0}
   RopeDiameter: 1.70000005
   RopeSegmentSides: 3
-  RopeMaterial: {fileID: 2100000, guid: 9f884cd5b7afe874fa04f41242a8c7d9, type: 2}
+  RopeMaterial: {fileID: 2100000, guid: b16557bac902ddc408d688255ba278fc, type: 2}
   RopeTextureTileMeters: 1
-  RopeSectionMaterial: {fileID: 0}
+  RopeSectionMaterial: {fileID: 2100000, guid: b16557bac902ddc408d688255ba278fc, type: 2}
   RopeTextureSectionTileMeters: 1
   IsExtensible: 0
   ExtensibleLength: 10
@@ -124,7 +124,7 @@ MonoBehaviour:
   LinkSolverIterationCount: 255
   LinkJointAngularXLimit: 180
   LinkJointAngularYLimit: 0
-  LinkJointAngularZLimit: 7
+  LinkJointAngularZLimit: 0
   LinkJointSpringValue: 0
   LinkJointDamperValue: 0
   LinkJointMaxForceValue: 100

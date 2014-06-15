@@ -88,7 +88,26 @@ public class Ship : MonoBehaviour {
                     ropeComponent.RopeNodes[0].fLength = currentDistance * 1f;
                     ropeComponent.RopeNodes[0].goNode = currentShip.transform.FindChild("Hook").gameObject;
                     ropeComponent.Regenerate();
+                    rope.layer =  LayerMask.NameToLayer("Bond");
+                    if (currentColor == ButtonColors.Red){
+                        rope.renderer.material.color = Color.red;
 
+                    }
+                    else if (currentColor == ButtonColors.Blue){
+                        rope.renderer.material.color = Color.blue;
+
+                    }
+                    else if (currentColor == ButtonColors.Green){
+                        rope.renderer.material.color = Color.green;
+
+                    
+                    }
+                    else if (currentColor == ButtonColors.Yellow){
+                        rope.renderer.material.color = Color.yellow;
+
+                    
+                    }
+                    
                 }
                 
             }
