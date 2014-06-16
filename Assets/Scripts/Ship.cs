@@ -19,7 +19,7 @@ public class Ship : MonoBehaviour {
     public AudioClip latching;
     public AudioClip unlatching;
     public AudioSource speaker;
-
+    public BondageGod god;
     public enum PlayerColor
     {
         Blue,
@@ -42,7 +42,9 @@ public class Ship : MonoBehaviour {
 	// Use this for initialization
 	public virtual void Start () {
         playerControllerData = GetComponent<PlayerControllerData>();
+        god = GameObject.Find("Bondage God").GetComponent<BondageGod>();
         //DEBUG
+
         speaker = GetComponent<AudioSource>();
 	}
 
@@ -123,7 +125,7 @@ public class Ship : MonoBehaviour {
 	
 	// Update is called once per frame
 	public virtual void Update () {
-
+        if (!god.gameStarted) return;
         //if (Input.GetAxis("Aim_z" + playerControllerData.controllerId))
         //{
         //    print("AIMZ!");
