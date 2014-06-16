@@ -3526,6 +3526,76 @@ MeshFilter:
   m_PrefabInternal: {fileID: 1368112757}
   m_GameObject: {fileID: 759081967}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &784315630
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 4
+  m_Component:
+  - 4: {fileID: 784315633}
+  - 23: {fileID: 784315632}
+  - 102: {fileID: 784315631}
+  m_Layer: 0
+  m_Name: New Text
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!102 &784315631
+TextMesh:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 784315630}
+  m_Text: Hello World
+  m_OffsetZ: 1.98000002
+  m_CharacterSize: 6.71000004
+  m_LineSpacing: 1
+  m_Anchor: 0
+  m_Alignment: 0
+  m_TabSize: 4
+  m_FontSize: 0
+  m_FontStyle: 1
+  m_RichText: 1
+  m_Font: {fileID: 12800000, guid: a16e5cad595fee942841e6e7ad09dc6f, type: 3}
+  m_Color:
+    serializedVersion: 2
+    rgba: 4282269433
+--- !u!23 &784315632
+Renderer:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 784315630}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_LightmapIndex: 255
+  m_LightmapTilingOffset: {x: 1, y: 1, z: 0, w: 0}
+  m_Materials:
+  - {fileID: 2100000, guid: a16e5cad595fee942841e6e7ad09dc6f, type: 3}
+  m_SubsetIndices: 
+  m_StaticBatchRoot: {fileID: 0}
+  m_UseLightProbes: 0
+  m_LightProbeAnchor: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+--- !u!4 &784315633
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 784315630}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -41.1414757, y: .574354768, z: -83.5999985}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 18
 --- !u!1 &789903273
 GameObject:
   m_ObjectHideFlags: 0
@@ -4867,7 +4937,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1220491101}
   m_LocalRotation: {x: .00169340929, y: -.707104802, z: .707104802, w: -.00169340894}
-  m_LocalPosition: {x: -.468881845, y: -1.19687796, z: 0}
+  m_LocalPosition: {x: -.28382653, y: -1.19687796, z: 0}
   m_LocalScale: {x: .333333284, y: .333333313, z: .333333254}
   m_Children: []
   m_Father: {fileID: 1220660778}
@@ -4923,7 +4993,7 @@ ParticleSystem:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1220491101}
-  lengthInSec: 20
+  lengthInSec: .100000001
   startDelay: 0
   speed: 1
   randomSeed: 0
@@ -5157,7 +5227,7 @@ ParticleSystem:
     enabled: 1
     type: 4
     radius: 4.88717079
-    angle: 45.3667259
+    angle: 21.2000008
     length: 5
     boxX: 1
     boxY: 1
@@ -5169,7 +5239,7 @@ ParticleSystem:
     enabled: 1
     m_Type: 0
     rate:
-      scalar: 30
+      scalar: 0
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5286,10 +5356,10 @@ ParticleSystem:
       maxGradient:
         key0:
           serializedVersion: 2
-          rgba: 3603990920
+          rgba: 3606970367
         key1:
           serializedVersion: 2
-          rgba: 282633793
+          rgba: 285212671
         key2:
           serializedVersion: 2
           rgba: 0

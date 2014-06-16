@@ -131,8 +131,13 @@ public class Ship : MonoBehaviour {
 
         if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) > 0f)
         {
-            print("should be runnig");
+         //   print("should be runnig " + Input.GetAxis("Aim_z" + playerControllerData.controllerId));
             Thrust(Time.deltaTime * Input.GetAxis("Aim_z" + playerControllerData.controllerId));
+            ParticleSystem particles = GetComponentInChildren<ParticleSystem>();
+            if (particles != null)
+            {
+                particles.emissionRate = 100 * Input.GetAxis("Aim_z" + playerControllerData.controllerId);
+            }
         }
 
         if (Input.GetAxis("Aim_z" + playerControllerData.controllerId) < 0f)
