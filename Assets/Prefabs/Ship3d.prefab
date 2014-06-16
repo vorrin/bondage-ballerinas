@@ -388,6 +388,7 @@ MonoBehaviour:
   latching: {fileID: 8300000, guid: be1524c85f9466c4580fbaaf0fc8d216, type: 3}
   unlatching: {fileID: 8300000, guid: 98e82d41e9a2e834182dc655a31b9ba1, type: 3}
   speaker: {fileID: 0}
+  god: {fileID: 0}
   tryingToLatch: 4
 --- !u!114 &11400002
 MonoBehaviour:
@@ -461,13 +462,14 @@ MonoBehaviour:
   debugShipColor: 0
   maximumDistanceForLatching: 20
   maximumVelocity: 100
-  indicator: {fileID: 0}
+  indicator: {fileID: 100004}
   playerCircle: {fileID: 0}
   playerColor: 0
   bump: {fileID: 0}
   latching: {fileID: 0}
   unlatching: {fileID: 0}
   speaker: {fileID: 0}
+  god: {fileID: 0}
   tryingToLatch: 4
   autoThrust: 0
   buttonColor: 0
