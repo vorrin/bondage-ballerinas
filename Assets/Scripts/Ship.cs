@@ -7,7 +7,6 @@ public class Ship : MonoBehaviour {
     public float engineStrength = 10f;
     public KeyCode thrustButton;
     public KeyCode latchButton;
-
     public GameObject ropePrefab;
     public Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>> connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
     public ButtonColors debugShipColor;
@@ -16,6 +15,10 @@ public class Ship : MonoBehaviour {
     public GameObject indicator;
     public SpriteRenderer playerCircle;
     public PlayerColor playerColor;
+    public AudioClip bump;
+    public AudioClip latching;
+    public AudioClip unlatching;
+    public AudioSource speaker;
 
     public enum PlayerColor
     {
@@ -40,6 +43,7 @@ public class Ship : MonoBehaviour {
 	public virtual void Start () {
         playerControllerData = GetComponent<PlayerControllerData>();
         //DEBUG
+        speaker = GetComponent<AudioSource>();
 	}
 
     public void Thrust(float deltaTime){
@@ -74,9 +78,11 @@ public class Ship : MonoBehaviour {
                         continue;
                         //too far, nothing done.
                     }
+                    //SUCCESFUL, BINDING
                     GameObject rope =  Instantiate(ropePrefab as Object) as GameObject;
                     UltimateRope ropeComponent = rope.GetComponent<UltimateRope>();
-
+                    speaker.clip = latching;
+                    speaker.Play();
                     //Dictionary<ButtonColors, UltimateRope> tmpDict = new Dictionary<ButtonColors, UltimateRope>() {
                     //    { currentColor,ropeComponent}
                     //};
@@ -196,6 +202,18 @@ public class Ship : MonoBehaviour {
 	
 	}
 
+    public void OnCollisionEnter(Collision coll)
+    {
+        print("coll " + rigidbody.velocity.magnitude);  
+        
+        if (rigidbody.velocity.magnitude > 5f)
+        {
+            print("Played ");
+            speaker.clip = bump; 
+            speaker.Play();
+        }
+    }
+
     public virtual void TryUnlatching()
     {
         tryingToLatch = ButtonColors.Null;
@@ -209,9 +227,13 @@ public class Ship : MonoBehaviour {
                 print("unlkatching ");
                 foreach (ButtonColors color in connection.Keys)
                 {
+                    //Succesfully unlatching 
                     Destroy(connection[color].gameObject);
                 }
                 ship.connections.Remove(this);
+                speaker.clip = unlatching;
+                speaker.Play();
+
                 connections = new Dictionary<Ship, Dictionary<ButtonColors, UltimateRope>>();
 
             }
