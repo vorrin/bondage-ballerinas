@@ -9,7 +9,7 @@ public class BondageGod : MonoBehaviour {
     public TextMesh redScore;
     public TextMesh blueScore;
     public Collider2D bonusSpawnRect;
-
+    public bool gameStarted = false;
 
 	// Use this for initialization
 	void Start () {

@@ -20,8 +20,6 @@ public class Bonus : MonoBehaviour {
            else
            {
                bondageGod.redScore.text = (int.Parse(bondageGod.redScore.text) + 1).ToString(); 
-
-
            }
 
 
