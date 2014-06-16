@@ -2476,6 +2476,10 @@ Prefab:
       propertyPath: playerColor
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
+      propertyPath: m_Name
+      value: Ship3d3
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
     - {fileID: 0}
@@ -4050,6 +4054,10 @@ Prefab:
     - target: {fileID: 11400000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
       propertyPath: playerColor
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: c90ad7ca885baff44b0b2fa9ec089431, type: 2}
+      propertyPath: m_Name
+      value: Ship3d4
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
@@ -6061,7 +6069,7 @@ GameObject:
   - 153: {fileID: 618242030}
   - 82: {fileID: 618242025}
   m_Layer: 0
-  m_Name: Ship3d
+  m_Name: Ship3d3
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11637,7 +11645,7 @@ GameObject:
   - 153: {fileID: 1552837452}
   - 82: {fileID: 1552837447}
   m_Layer: 0
-  m_Name: Ship3d
+  m_Name: Ship3d4
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
