@@ -210,7 +210,8 @@ public class Ship : MonoBehaviour {
         
         if (rigidbody.velocity.magnitude > 5f)
         {
-            print("Played ");
+            print("Played " + speaker);
+            
             speaker.clip = bump; 
             speaker.Play();
         }
