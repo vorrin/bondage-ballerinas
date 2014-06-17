@@ -116,7 +116,7 @@ Transform:
   m_GameObject: {fileID: 100000}
   m_LocalRotation: {x: 0, y: 0, z: -.707106829, w: .707106829}
   m_LocalPosition: {x: -56.4318733, y: 19.1357689, z: 8.68999958}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 3}
   m_Children:
   - {fileID: 400002}
   - {fileID: 400004}
@@ -373,12 +373,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17d239a09fa532d459d16d9b1780a2c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  engineStrength: 18000
+  engineStrength: 14000
   thrustButton: 97
   latchButton: 113
   ropePrefab: {fileID: 100040, guid: d458fbb012a9a054b836e9e3a6609ab1, type: 2}
   debugShipColor: 4
-  maximumDistanceForLatching: 80
+  maximumDistanceForLatching: 55
   maximumVelocity: 80
   indicator: {fileID: 100004}
   playerCircle: {fileID: 0}
@@ -453,7 +453,7 @@ SphereCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 1.65999997
+  m_Radius: .879999995
   m_Center: {x: .0900000036, y: -.109999999, z: 0}
 --- !u!153 &15300000
 ConfigurableJoint:
